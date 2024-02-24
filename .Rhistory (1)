@@ -1,0 +1,512 @@
+slt <- slt %>% mutate(Rank = 1:n()) %>%
+select(Rank, Team, Played, Points, GD, Top4, Top6, Top7, Rel)
+pos_formatter <- formatter("span",
+style = x ~ style(color = ifelse(as.numeric(x)>50, "green", "gray")),
+#                               x ~ icontext(ifelse(x == "", "remove", "ok")),
+x ~ sprintf(x))
+neg_formatter <- formatter("span",
+style = x ~ style(color = ifelse(as.numeric(x)>50, "red", "gray")),
+#                               x ~ icontext(ifelse(x == "", "remove", "ok")),
+x ~ sprintf(x))
+f1 <- formattable(slt,
+align = c("l", "c", "c", "c", "c", "c", "c", "c"),
+formatters = list(
+Rank = formatter("span", x ~ sprintf("%.0f", x)),
+Top4 = pos_formatter,
+Top6 = pos_formatter,
+Top7 = pos_formatter,
+Rel = neg_formatter
+))
+f1
+export_formattable(f1, "table.png")
+# p <- plot.relegation.odds("West Ham", allSims, iSim)
+# p
+# pA <- plot.relegation.odds("Aston Villa", allSims, iSim)
+# pB <- plot.relegation.odds("Bournemouth", allSims, iSim)
+teams_to_plot <- c("West Ham", "Watford", "Aston Villa", "Bournemouth")
+plots <- lapply(teams_to_plot, plot.relegation.odds, allSims, iSim)
+nTeams <- length(plots)
+nc <- ceiling(sqrt(nTeams))
+grid.arrange(grobs=plots, ncol=nc)
+gr <- arrangeGrob(grobs = plots, ncol=nc)
+ggsave("relegation.png", gr, width=8, height=6, units="in")
+# # each team's probabilities per position
+# # table(allSims$Team, allSims$Rank)/iSim
+## to plot relegation over time; need to build different function
+## ggplot(rel, aes(x = Gameweek, y = Percent, color = Team)) +
+##    geom_text_repel(aes(label=Team),color = "black", size=3) +
+##    scale_x_discrete(breaks = c("28.9","29"), labels = c("28.9","29"))
+set.seed(1234)
+allScores <- simulate.many.seasons(remMatches, iSim, neutralize=FALSE)
+allSims <- calc.points.and.rank(allScores, leagueTable, iSim)
+# wSims <- select(allSims, Team, Rank) # do we need this wsims?  or is allsims fine?
+relegation <- create.finishing.odds.table(allSims, 17, ">")
+relegation
+# run this if want to permutate on a single game
+# permutatedRelegation <- permutate.a.result(allScores, leagueTable, iSim, "West Ham", "Watford")
+# run this if want to see how 2 teams did against each other
+# check.individual.game(allScores, iSim, "West Ham", "Watford")
+# run this to see odds of teams finishing ahead of each other
+check.comparative.rankings(allSims, iSim, "Arsenal", "Tottenham")
+# odds of league winner
+# allSims %>% filter(Rank == 1) %>% select(Team) %>% table/iSim
+winner <- create.finishing.odds.table(allSims, 1, "==")
+winner
+# odds of top 4, 7
+# allSims %>% filter(Rank < 5) %>% select(Team) %>% table/iSim
+top4 <- create.finishing.odds.table(allSims, 5, "<")
+top6 <- create.finishing.odds.table(allSims, 7, "<")
+top7 <- create.finishing.odds.table(allSims, 8, "<")
+slt <- left_join(sortedLeagueTable, select(top4, c(Team, Top4 = Percent)))
+slt <- left_join(slt, select(top6, c(Team, Top6 = Percent)))
+slt <- left_join(slt, select(top7, c(Team, Top7 = Percent)))
+slt <- left_join(slt, select(relegation, c(Team, Rel = Percent)))
+fnc <- function(var, decimal_places) {
+var = sprintf(paste0("%1.",decimal_places,"f"), var)
+var[var=="NA"] = ""
+var
+}
+vars <- c('Top4', 'Top6', 'Top7', 'Rel')
+slt[ , vars] <- mapply(fnc, slt[ , vars], 1)
+slt <- slt %>% mutate(Rank = 1:n()) %>%
+select(Rank, Team, Played, Points, GD, Top4, Top6, Top7, Rel)
+pos_formatter <- formatter("span",
+style = x ~ style(color = ifelse(as.numeric(x)>50, "green", "gray")),
+#                               x ~ icontext(ifelse(x == "", "remove", "ok")),
+x ~ sprintf(x))
+neg_formatter <- formatter("span",
+style = x ~ style(color = ifelse(as.numeric(x)>50, "red", "gray")),
+#                               x ~ icontext(ifelse(x == "", "remove", "ok")),
+x ~ sprintf(x))
+f1 <- formattable(slt,
+align = c("l", "c", "c", "c", "c", "c", "c", "c"),
+formatters = list(
+Rank = formatter("span", x ~ sprintf("%.0f", x)),
+Top4 = pos_formatter,
+Top6 = pos_formatter,
+Top7 = pos_formatter,
+Rel = neg_formatter
+))
+f1
+export_formattable(f1, "table.png")
+# p <- plot.relegation.odds("West Ham", allSims, iSim)
+# p
+# pA <- plot.relegation.odds("Aston Villa", allSims, iSim)
+# pB <- plot.relegation.odds("Bournemouth", allSims, iSim)
+teams_to_plot <- c("West Ham", "Watford", "Aston Villa", "Bournemouth")
+plots <- lapply(teams_to_plot, plot.relegation.odds, allSims, iSim)
+nTeams <- length(plots)
+nc <- ceiling(sqrt(nTeams))
+grid.arrange(grobs=plots, ncol=nc)
+gr <- arrangeGrob(grobs = plots, ncol=nc)
+ggsave("relegation.png", gr, width=8, height=6, units="in")
+# # each team's probabilities per position
+# # table(allSims$Team, allSims$Rank)/iSim
+## to plot relegation over time; need to build different function
+## ggplot(rel, aes(x = Gameweek, y = Percent, color = Team)) +
+##    geom_text_repel(aes(label=Team),color = "black", size=3) +
+##    scale_x_discrete(breaks = c("28.9","29"), labels = c("28.9","29"))
+###
+###
+### Other things I'd like to be able to do:
+### 1)
+### set/change odds of individual games
+### and rerun simulation
+### 2)
+### calculate game 'importance' (by running simulation if team wins/draws/loses
+### affecting ultimate standing 1-4, 5-7, 17/18)
+seasonMatrix
+# Read E0.csv that contains all games played so far
+plInput <- read_csv("data/e0.csv")
+# and then narrow to only stats we use
+pl <- select(plInput, HomeTeam, AwayTeam, FTR, FTHG, FTAG)
+## Test out Big 6 head to head contests and show who reffed
+# big6 <- c("Liverpool", "Man City", "Man United", "Chelsea", "Arsenal", "Tottenham")
+#
+# big6h2h = filter(pl, HomeTeam %in% big6 & AwayTeam %in% big6)
+# count(big6h2h,Referee, sort = TRUE)
+# set # of simulations
+iSim <- 5000
+# Add games played but not yet in .csv file
+# Can also add games we want to "force" to certain outcomes as scenarios
+# Tuesday game
+pl <- add.game(pl, "Chelsea", 1, "Norwich", 0)
+# Wednesday games
+pl <- add.game(pl, "Burnley", 1, "Wolves", 1)
+pl <- add.game(pl, "Man City", 2, "Bournemouth", 1)
+pl <- add.game(pl, "Newcastle", 1, "Tottenham", 3)
+pl <- add.game(pl, "Arsenal", 2, "Liverpool", 1)
+# Thursday games
+pl <- add.game(pl, "Everton", 1, "Aston Villa", 1)
+pl <- add.game(pl, "Leicester", 2, "Sheffield United", 0)
+pl <- add.game(pl, "Crystal Palace", 0, "Man United", 2)
+pl <- add.game(pl, "Southampton", 1, "Brighton", 1)
+# Friday game
+pl <- add.game(pl, "West Ham", 3, "Watford", 1)
+# Gameweek 37
+# Saturday game
+pl <- add.game(pl, "Norwich", 0, "Burnley", 2)
+# Sunday games
+pl <- add.game(pl, "Bournemouth", 0, "Southampton", 2)
+pl <- add.game(pl, "Tottenham", 3, "Leicester", 0)
+# Monday games
+pl <- add.game(pl, "Brighton", 0, "Newcastle", 0)
+pl <- add.game(pl, "Sheffield United", 0, "Everton", 1)
+pl <- add.game(pl, "Wolves", 2, "Crystal Palace", 0)
+# Tuesday games
+pl <- add.game(pl, "Watford", 0, "Man City", 4)
+pl <- add.game(pl, "Aston Villa", 1, "Arsenal", 0)
+# Wednesday games
+# pl <- add.game(pl, "Man United", 0, "West Ham", 0)
+# pl <- add.game(pl, "Liverpool", 0, "Chelsea", 0)
+# Gameweek 38
+# pl <- add.game(pl, "West Ham", 0, "Aston Villa", 0)
+# pl <- add.game(pl, "Arsenal", 0, "Watford", 0)
+# pl <- add.game(pl, "Leicester", 0, Man United", 0)
+# pl <- add.game(pl, "Burnley", 0, Brighton", 0)
+# pl <- add.game(pl, "Newcastle", 0, "Liverpool", 0)
+# pl <- add.game(pl, "Chelsea", 0, "Wolves", 0)
+# pl <- add.game(pl, "Crystal Palace", 0, "Tottenham", 0)
+# pl <- add.game(pl, "Everton", 0, "Bournemouth", 0)
+# pl <- add.game(pl, "Southampton", 0, "Sheffield United", 0)
+# pl <- add.game(pl, "Man City", 0, "Norwich", 0)
+leagueTable <- create.league.table(pl)
+sortedLeagueTable <- create.sorted.league.table(leagueTable)
+view(sortedLeagueTable)
+## graph of who's played whom and what's left
+seasonMatrix <- ggplot(pl, aes(x=AwayTeam, y=HomeTeam, color=FTR)) +
+geom_point(size=2) +
+theme(axis.text.x = element_text(angle=90, hjust=1, vjust=0)) +
+ggtitle("Premier League 2019-20 Results So Far") +
+scale_color_manual(name = "Result",
+labels = c("Away win", "Draw", "Home win"),
+values = c("red", "black","green")) +
+labs(x = "Away Team", y = "Home Team")
+seasonMatrix
+remMatches <- determine.remaining.matches(pl, leagueTable)
+set.seed(1234)
+allScores <- simulate.many.seasons(remMatches, iSim, neutralize=FALSE)
+allSims <- calc.points.and.rank(allScores, leagueTable, iSim)
+relegation <- create.finishing.odds.table(allSims, 17, ">")
+relegation
+# run this if want to permutate on a single game
+# permutatedFinish <- permutate.a.result(allScores, leagueTable, iSim, "Arsenal", "Watford", TRUE)
+permutatedFinish <- permutate.a.result(allScores, leagueTable, iSim, "Man United", "West Ham", FALSE)
+# run this if want to see how 2 teams did against each other
+# check.individual.game(allScores, iSim, "West Ham", "Watford")
+# run this to see odds of teams finishing ahead of each other
+check.comparative.rankings(allSims, iSim, "Arsenal", "Tottenham")
+# odds of league winner
+# allSims %>% filter(Rank == 1) %>% select(Team) %>% table/iSim
+winner <- create.finishing.odds.table(allSims, 1, "==")
+winner
+# odds of top 4, 7
+# allSims %>% filter(Rank < 5) %>% select(Team) %>% table/iSim
+top4 <- create.finishing.odds.table(allSims, 5, "<")
+top6 <- create.finishing.odds.table(allSims, 7, "<")
+top7 <- create.finishing.odds.table(allSims, 8, "<")
+slt <- left_join(sortedLeagueTable, select(top4, c(Team, Top4 = Percent)))
+slt <- left_join(slt, select(top6, c(Team, Top6 = Percent)))
+slt <- left_join(slt, select(top7, c(Team, Top7 = Percent)))
+slt <- left_join(slt, select(relegation, c(Team, Rel = Percent)))
+fnc <- function(var, decimal_places) {
+var = sprintf(paste0("%1.",decimal_places,"f"), var)
+var[var=="NA"] = ""
+var
+}
+vars <- c('Top4', 'Top6', 'Top7', 'Rel')
+slt[ , vars] <- mapply(fnc, slt[ , vars], 1)
+slt <- slt %>% mutate(Rank = 1:n()) %>%
+select(Rank, Team, Played, Points, GD, Top4, Top6, Top7, Rel)
+pos_formatter <- formatter("span",
+style = x ~ style(color = ifelse(as.numeric(x)>50, "green", "gray")),
+#                               x ~ icontext(ifelse(x == "", "remove", "ok")),
+x ~ sprintf(x))
+neg_formatter <- formatter("span",
+style = x ~ style(color = ifelse(as.numeric(x)>50, "red", "gray")),
+#                               x ~ icontext(ifelse(x == "", "remove", "ok")),
+x ~ sprintf(x))
+f1 <- formattable(slt,
+align = c("l", "c", "c", "c", "c", "c", "c", "c"),
+formatters = list(
+Rank = formatter("span", x ~ sprintf("%.0f", x)),
+Top4 = pos_formatter,
+Top6 = pos_formatter,
+Top7 = pos_formatter,
+Rel = neg_formatter
+))
+f1
+export_formattable(f1, "table.png")
+# p <- plot.relegation.odds("West Ham", allSims, iSim)
+# p
+# pA <- plot.relegation.odds("Aston Villa", allSims, iSim)
+# pB <- plot.relegation.odds("Bournemouth", allSims, iSim)
+teams_to_plot <- c("West Ham", "Watford", "Aston Villa", "Bournemouth")
+plots <- lapply(teams_to_plot, plot.relegation.odds, allSims, iSim)
+nTeams <- length(plots)
+nc <- ceiling(sqrt(nTeams))
+grid.arrange(grobs=plots, ncol=nc)
+gr <- arrangeGrob(grobs = plots, ncol=nc)
+ggsave("relegation.png", gr, width=8, height=6, units="in")
+# # each team's probabilities per position
+# # table(allSims$Team, allSims$Rank)/iSim
+## to plot relegation over time; need to build different function
+## ggplot(rel, aes(x = Gameweek, y = Percent, color = Team)) +
+##    geom_text_repel(aes(label=Team),color = "black", size=3) +
+##    scale_x_discrete(breaks = c("28.9","29"), labels = c("28.9","29"))
+###
+###
+### Other things I'd like to be able to do:
+### 1)
+### set/change odds of individual games
+### and rerun simulation
+### 2)
+### calculate game 'importance' (by running simulation if team wins/draws/loses
+### affecting ultimate standing 1-4, 5-7, 17/18)
+view(permutatedFinish)
+permutate.a.result <- function(allScores, leagueTable, iSim, Home, Away, relegationOrTop4=TRUE) {
+homeWins <- mutate(allScores,
+HG = replace(HG, HomeTeam == Home & AwayTeam == Away, 2),
+AG = replace(AG, HomeTeam == Home & AwayTeam == Away, 1))
+awayWins <- mutate(allScores,
+HG = replace(HG, HomeTeam == Home & AwayTeam == Away, 1),
+AG = replace(AG, HomeTeam == Home & AwayTeam == Away, 2))
+draws <- mutate(allScores,
+HG = replace(HG, HomeTeam == Home & AwayTeam == Away, 1),
+AG = replace(AG, HomeTeam == Home & AwayTeam == Away, 1))
+homeWinSims <- calc.points.and.rank(homeWins, leagueTable, iSim)
+awayWinSims <- calc.points.and.rank(awayWins, leagueTable, iSim)
+drawSims <- calc.points.and.rank(draws, leagueTable, iSim)
+if (relegationOrTop4) {
+relegationH <- create.finishing.odds.table(homeWinSims, 17, ">")
+relegationA <- create.finishing.odds.table(awayWinSims, 17, ">")
+relegationD <- create.finishing.odds.table(drawSims, 17, ">")
+return(c(relegationH, relegationA, relegationD))
+} else {
+top4H <- create.finishing.odds.table(homeWinSims, 5, "<")
+top4A <- create.finishing.odds.table(awayWinSims, 5, "<")
+top4D <- create.finishing.odds.table(drawSims, 5, "<")
+return(c(top4H, top4A, top4D))
+}
+}
+permutatedFinish <- permutate.a.result(allScores, leagueTable, iSim, "Man United", "West Ham", FALSE)
+view(permutatedFinish)
+# Read E0.csv that contains all games played so far
+plInput <- read_csv("data/e0.csv")
+# and then narrow to only stats we use
+pl <- select(plInput, HomeTeam, AwayTeam, FTR, FTHG, FTAG)
+## Test out Big 6 head to head contests and show who reffed
+# big6 <- c("Liverpool", "Man City", "Man United", "Chelsea", "Arsenal", "Tottenham")
+#
+# big6h2h = filter(pl, HomeTeam %in% big6 & AwayTeam %in% big6)
+# count(big6h2h,Referee, sort = TRUE)
+# set # of simulations
+iSim <- 5000
+# Add games played but not yet in .csv file
+# Can also add games we want to "force" to certain outcomes as scenarios
+# Tuesday game
+pl <- add.game(pl, "Chelsea", 1, "Norwich", 0)
+# Wednesday games
+pl <- add.game(pl, "Burnley", 1, "Wolves", 1)
+pl <- add.game(pl, "Man City", 2, "Bournemouth", 1)
+pl <- add.game(pl, "Newcastle", 1, "Tottenham", 3)
+pl <- add.game(pl, "Arsenal", 2, "Liverpool", 1)
+# Thursday games
+pl <- add.game(pl, "Everton", 1, "Aston Villa", 1)
+pl <- add.game(pl, "Leicester", 2, "Sheffield United", 0)
+pl <- add.game(pl, "Crystal Palace", 0, "Man United", 2)
+pl <- add.game(pl, "Southampton", 1, "Brighton", 1)
+# Friday game
+pl <- add.game(pl, "West Ham", 3, "Watford", 1)
+# Gameweek 37
+# Saturday game
+pl <- add.game(pl, "Norwich", 0, "Burnley", 2)
+# Sunday games
+pl <- add.game(pl, "Bournemouth", 0, "Southampton", 2)
+pl <- add.game(pl, "Tottenham", 3, "Leicester", 0)
+# Monday games
+pl <- add.game(pl, "Brighton", 0, "Newcastle", 0)
+pl <- add.game(pl, "Sheffield United", 0, "Everton", 1)
+pl <- add.game(pl, "Wolves", 2, "Crystal Palace", 0)
+# Tuesday games
+pl <- add.game(pl, "Watford", 0, "Man City", 4)
+pl <- add.game(pl, "Aston Villa", 1, "Arsenal", 0)
+# Wednesday games
+pl <- add.game(pl, "Man United", 1, "West Ham", 1)
+# pl <- add.game(pl, "Liverpool", 0, "Chelsea", 0)
+# Gameweek 38
+# pl <- add.game(pl, "West Ham", 0, "Aston Villa", 0)
+# pl <- add.game(pl, "Arsenal", 0, "Watford", 0)
+# pl <- add.game(pl, "Leicester", 0, Man United", 0)
+# pl <- add.game(pl, "Burnley", 0, Brighton", 0)
+# pl <- add.game(pl, "Newcastle", 0, "Liverpool", 0)
+# pl <- add.game(pl, "Chelsea", 0, "Wolves", 0)
+# pl <- add.game(pl, "Crystal Palace", 0, "Tottenham", 0)
+# pl <- add.game(pl, "Everton", 0, "Bournemouth", 0)
+# pl <- add.game(pl, "Southampton", 0, "Sheffield United", 0)
+# pl <- add.game(pl, "Man City", 0, "Norwich", 0)
+leagueTable <- create.league.table(pl)
+sortedLeagueTable <- create.sorted.league.table(leagueTable)
+view(sortedLeagueTable)
+## graph of who's played whom and what's left
+seasonMatrix <- ggplot(pl, aes(x=AwayTeam, y=HomeTeam, color=FTR)) +
+geom_point(size=2) +
+theme(axis.text.x = element_text(angle=90, hjust=1, vjust=0)) +
+ggtitle("Premier League 2019-20 Results So Far") +
+scale_color_manual(name = "Result",
+labels = c("Away win", "Draw", "Home win"),
+values = c("red", "black","green")) +
+labs(x = "Away Team", y = "Home Team")
+seasonMatrix
+remMatches <- determine.remaining.matches(pl, leagueTable)
+set.seed(1234)
+allScores <- simulate.many.seasons(remMatches, iSim, neutralize=FALSE)
+allSims <- calc.points.and.rank(allScores, leagueTable, iSim)
+relegation <- create.finishing.odds.table(allSims, 17, ">")
+relegation
+# run this if want to permutate on a single game
+# permutatedFinish <- permutate.a.result(allScores, leagueTable, iSim, "Arsenal", "Watford", TRUE)
+permutatedFinish <- permutate.a.result(allScores, leagueTable, iSim, "Liverpool", "Chelsea", FALSE)
+# run this if want to see how 2 teams did against each other
+# check.individual.game(allScores, iSim, "West Ham", "Watford")
+# run this to see odds of teams finishing ahead of each other
+check.comparative.rankings(allSims, iSim, "Arsenal", "Tottenham")
+# odds of league winner
+# allSims %>% filter(Rank == 1) %>% select(Team) %>% table/iSim
+winner <- create.finishing.odds.table(allSims, 1, "==")
+winner
+# odds of top 4, 7
+# allSims %>% filter(Rank < 5) %>% select(Team) %>% table/iSim
+top4 <- create.finishing.odds.table(allSims, 5, "<")
+top6 <- create.finishing.odds.table(allSims, 7, "<")
+top7 <- create.finishing.odds.table(allSims, 8, "<")
+slt <- left_join(sortedLeagueTable, select(top4, c(Team, Top4 = Percent)))
+slt <- left_join(slt, select(top6, c(Team, Top6 = Percent)))
+slt <- left_join(slt, select(top7, c(Team, Top7 = Percent)))
+slt <- left_join(slt, select(relegation, c(Team, Rel = Percent)))
+fnc <- function(var, decimal_places) {
+var = sprintf(paste0("%1.",decimal_places,"f"), var)
+var[var=="NA"] = ""
+var
+}
+vars <- c('Top4', 'Top6', 'Top7', 'Rel')
+slt[ , vars] <- mapply(fnc, slt[ , vars], 1)
+slt <- slt %>% mutate(Rank = 1:n()) %>%
+select(Rank, Team, Played, Points, GD, Top4, Top6, Top7, Rel)
+pos_formatter <- formatter("span",
+style = x ~ style(color = ifelse(as.numeric(x)>50, "green", "gray")),
+#                               x ~ icontext(ifelse(x == "", "remove", "ok")),
+x ~ sprintf(x))
+neg_formatter <- formatter("span",
+style = x ~ style(color = ifelse(as.numeric(x)>50, "red", "gray")),
+#                               x ~ icontext(ifelse(x == "", "remove", "ok")),
+x ~ sprintf(x))
+f1 <- formattable(slt,
+align = c("l", "c", "c", "c", "c", "c", "c", "c"),
+formatters = list(
+Rank = formatter("span", x ~ sprintf("%.0f", x)),
+Top4 = pos_formatter,
+Top6 = pos_formatter,
+Top7 = pos_formatter,
+Rel = neg_formatter
+))
+f1
+export_formattable(f1, "table.png")
+# p <- plot.relegation.odds("West Ham", allSims, iSim)
+# p
+# pA <- plot.relegation.odds("Aston Villa", allSims, iSim)
+# pB <- plot.relegation.odds("Bournemouth", allSims, iSim)
+teams_to_plot <- c("West Ham", "Watford", "Aston Villa", "Bournemouth")
+plots <- lapply(teams_to_plot, plot.relegation.odds, allSims, iSim)
+nTeams <- length(plots)
+nc <- ceiling(sqrt(nTeams))
+grid.arrange(grobs=plots, ncol=nc)
+gr <- arrangeGrob(grobs = plots, ncol=nc)
+ggsave("relegation.png", gr, width=8, height=6, units="in")
+# # each team's probabilities per position
+# # table(allSims$Team, allSims$Rank)/iSim
+## to plot relegation over time; need to build different function
+## ggplot(rel, aes(x = Gameweek, y = Percent, color = Team)) +
+##    geom_text_repel(aes(label=Team),color = "black", size=3) +
+##    scale_x_discrete(breaks = c("28.9","29"), labels = c("28.9","29"))
+###
+###
+### Other things I'd like to be able to do:
+### 1)
+### set/change odds of individual games
+### and rerun simulation
+### 2)
+### calculate game 'importance' (by running simulation if team wins/draws/loses
+### affecting ultimate standing 1-4, 5-7, 17/18)
+permutatedFinish
+view(permutatedFinish)
+pl <- select(plInput, HomeTeam, AwayTeam, FTR, FTHG, FTAG)
+## Test out Big 6 head to head contests and show who reffed
+# big6 <- c("Liverpool", "Man City", "Man United", "Chelsea", "Arsenal", "Tottenham")
+#
+# big6h2h = filter(pl, HomeTeam %in% big6 & AwayTeam %in% big6)
+# count(big6h2h,Referee, sort = TRUE)
+# set # of simulations
+iSim <- 5000
+# Add games played but not yet in .csv file
+# Can also add games we want to "force" to certain outcomes as scenarios
+# Tuesday game
+pl <- add.game(pl, "Chelsea", 1, "Norwich", 0)
+# Wednesday games
+pl <- add.game(pl, "Burnley", 1, "Wolves", 1)
+pl <- add.game(pl, "Man City", 2, "Bournemouth", 1)
+pl <- add.game(pl, "Newcastle", 1, "Tottenham", 3)
+pl <- add.game(pl, "Arsenal", 2, "Liverpool", 1)
+# Thursday games
+pl <- add.game(pl, "Everton", 1, "Aston Villa", 1)
+pl <- add.game(pl, "Leicester", 2, "Sheffield United", 0)
+pl <- add.game(pl, "Crystal Palace", 0, "Man United", 2)
+pl <- add.game(pl, "Southampton", 1, "Brighton", 1)
+# Friday game
+pl <- add.game(pl, "West Ham", 3, "Watford", 1)
+# Gameweek 37
+# Saturday game
+pl <- add.game(pl, "Norwich", 0, "Burnley", 2)
+# Sunday games
+pl <- add.game(pl, "Bournemouth", 0, "Southampton", 2)
+pl <- add.game(pl, "Tottenham", 3, "Leicester", 0)
+# Monday games
+pl <- add.game(pl, "Brighton", 0, "Newcastle", 0)
+pl <- add.game(pl, "Sheffield United", 0, "Everton", 1)
+pl <- add.game(pl, "Wolves", 2, "Crystal Palace", 0)
+# Tuesday games
+pl <- add.game(pl, "Watford", 0, "Man City", 4)
+pl <- add.game(pl, "Aston Villa", 1, "Arsenal", 0)
+# Wednesday games
+pl <- add.game(pl, "Man United", 1, "West Ham", 1)
+pl <- add.game(pl, "Liverpool", 5, "Chelsea", 3)
+# Gameweek 38
+# pl <- add.game(pl, "West Ham", 0, "Aston Villa", 0)
+# pl <- add.game(pl, "Arsenal", 0, "Watford", 0)
+# pl <- add.game(pl, "Leicester", 0, Man United", 0)
+# pl <- add.game(pl, "Burnley", 0, Brighton", 0)
+# pl <- add.game(pl, "Newcastle", 0, "Liverpool", 0)
+# pl <- add.game(pl, "Chelsea", 0, "Wolves", 0)
+# pl <- add.game(pl, "Crystal Palace", 0, "Tottenham", 0)
+# pl <- add.game(pl, "Everton", 0, "Bournemouth", 0)
+# pl <- add.game(pl, "Southampton", 0, "Sheffield United", 0)
+# pl <- add.game(pl, "Man City", 0, "Norwich", 0)
+leagueTable <- create.league.table(pl)
+sortedLeagueTable <- create.sorted.league.table(leagueTable)
+view(sortedLeagueTable)
+## graph of who's played whom and what's left
+seasonMatrix <- ggplot(pl, aes(x=AwayTeam, y=HomeTeam, color=FTR)) +
+geom_point(size=2) +
+theme(axis.text.x = element_text(angle=90, hjust=1, vjust=0)) +
+ggtitle("Premier League 2019-20 Results So Far") +
+scale_color_manual(name = "Result",
+labels = c("Away win", "Draw", "Home win"),
+values = c("red", "black","green")) +
+labs(x = "Away Team", y = "Home Team")
+seasonMatrix
+remMatches <- determine.remaining.matches(pl, leagueTable)
+set.seed(1234)
+allScores <- simulate.many.seasons(remMatches, iSim, neutralize=FALSE)
+allSims <- calc.points.and.rank(allScores, leagueTable, iSim)
+relegation <- create.finishing.odds.table(allSims, 17, ">")
+relegation
