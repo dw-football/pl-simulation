@@ -683,7 +683,7 @@ run.maccabi <- function(iSim = 100)
 #################################
 
 # Read E0.csv that contains all games played so far
-setwd("C:/Users/dwarren/Google Drive/Computing/R/SoccerSimulation")
+# setwd("C:/Users/dwarren/Google Drive/Computing/R/SoccerSimulation")
 plInput <- read_csv("data/e0.csv")
 # and then narrow to only stats we use
 pl <- select(plInput, HomeTeam, AwayTeam, FTR, FTHG, FTAG) 
@@ -699,42 +699,7 @@ iSim <- 5000
 
 ## Add games played but not yet in .csv file
 ## Can also add games we want to "force" to certain outcomes as scenarios
-pl <- add.game(pl, "Leeds", 2, "Newcastle", 2)
-pl <- add.game(pl, "Aston Villa", 2, "Tottenham", 1)
-pl <- add.game(pl, "Chelsea", 2, "Nott'm Forest", 2)
-pl <- add.game(pl, "Crystal Palace", 2, "Bournemouth", 0)
-pl <- add.game(pl, "Man United", 1, "Wolves", 0)
-pl <- add.game(pl, "Southampton", 0, "Fulham", 2)
-
-pl <- add.game(pl, "Everton", 0, "Man City", 3)
-pl <- add.game(pl, "Brentford", 2, "West Ham", 0)
-pl <- add.game(pl, "Arsenal", 0, "Brighton", 1)
- 
-pl <- add.game(pl, "Leicester", 0, "Liverpool", 3)
-
-pl <- add.game(pl, "Newcastle", 4, "Brighton", 1)
-
-pl <- add.game(pl, "Tottenham", 1, "Brentford", 3)
-pl <- add.game(pl, "Fulham", 2, "Crystal Palace", 2)
-pl <- add.game(pl, "Wolves", 1, "Everton", 1)
-pl <- add.game(pl, "Liverpool", 1, "Aston Villa", 1)
-pl <- add.game(pl, "Bournemouth", 0, "Man United", 1)
-pl <- add.game(pl, "Nott'm Forest", 1, "Arsenal", 0)
-
-# Sunday games 2023-05-21
-pl <- add.game(pl, "Brighton", 3, "Southampton", 1)
-pl <- add.game(pl, "West Ham", 3, "Leeds", 1)
-pl <- add.game(pl, "Man City", 1, "Chelsea", 0)
-
-# Monday game 2023-05-22
-pl <- add.game(pl, "Newcastle", 0, "Leicester", 0)
-
-# pl <- add.game(pl, "Leicester", 1, "West Ham", 0)
-# pl <- add.game(pl, "Southampton", 3, "Fulham", 1)
-# pl <- add.game(pl, "Crystal Palace", 3, "Aston Villa", 2)
-# pl <- add.game(pl, "Tottenham", 2, "Wolves", 0)
-# pl <- add.game(pl, "West Brom", 1, "Liverpool", 2)
-# pl <- add.game(pl, "Everton", 0, "Sheffield United", 1)
+# pl <- add.game(pl, "Leeds", 2, "Newcastle", 2)
 
 leagueTable <- create.league.table(pl)
 sortedLeagueTable <- create.sorted.league.table(leagueTable)
@@ -769,19 +734,18 @@ relegation
 # permutatedFinish <- permutate.a.result(allScores, leagueTable, iSim, "Chelsea",
 #                                       "Nott'm Forest", 17, ">")
 permutatedFinish <- permutate.a.result(allScores, leagueTable, iSim,
-                                      "Newcastle", "Leicester", 17, ">")
+                                      "Liverpool", "Man City", 2, "<")
+permutatedFinish <- permutate.a.result(allScores, leagueTable, iSim,
+                                       "Man City", "Arsenal", 2, "<")
 
 # run this if want to see how 2 teams did against each other
-check.individual.game(allScores, iSim, "Leicester", "West Ham")
-check.individual.game(allScores, iSim, "Brighton", "Man City")
-check.individual.game(allScores, iSim, "Brighton", "Southampton")
-check.individual.game(allScores, iSim, "Brentford", "Man City")
-check.individual.game(allScores, iSim, "Crystal Palace", "Nott'm Forest")
+check.individual.game(allScores, iSim, "Liverpool", "Man City")
+check.individual.game(allScores, iSim, "Man City", "Arsenal")
 
 # run this to see odds of teams finishing ahead of each other
 check.comparative.rankings(allSims, iSim, "Arsenal", "Tottenham")
-check.comparative.rankings(allSims, iSim, "Liverpool", "Brighton")
-check.comparative.rankings(allSims, iSim, "Southampton", "Leeds")
+# check.comparative.rankings(allSims, iSim, "Liverpool", "Brighton")
+# check.comparative.rankings(allSims, iSim, "Southampton", "Leeds")
 
 t <- create.538.table(allSims, sortedLeagueTable)
 p <- print.formatted.538(t)
