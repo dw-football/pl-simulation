@@ -204,6 +204,56 @@ simulate.one.season <- function(remMatches, neutralize = FALSE) {
   return(scores)
 }
 
+simulate.one.game <- function(numSims, ExpHG, ExpAG) {
+  # Simulate home and away goals
+  homeGoals <- rpois(numSims, lambda = ExpHG)
+  awayGoals <- rpois(numSims, lambda = ExpAG)
+
+  # Calculate match outcomes
+  homeWins <- sum(homeGoals > awayGoals)
+  awayWins <- sum(awayGoals > homeGoals)
+  draws <- numSims - (homeWins + awayWins)
+  
+  # Calculate average goals scored by each team
+  avgHomeGoals <- mean(homeGoals)
+  avgAwayGoals <- mean(awayGoals)
+  
+  # Return results
+  results <- list(
+    HomeWins = homeWins,
+    AwayWins = awayWins,
+    Draws = draws,
+    AvgHomeGoals = avgHomeGoals,
+    AvgAwayGoals = avgAwayGoals
+  )
+  return(results)
+}
+
+# Function to simulate matches for each pair and store results in the original data table
+simulate.many.games <- function(data, numSims) {
+  results <- lapply(1:nrow(data), function(i) {
+    result <- simulate.one.game(numSims, ExpHG = data[i, EHG], ExpAG = data[i, EAG])
+    return (result)
+  })
+  
+  # Add results back to the original data table
+  results_df <- do.call(rbind, results)
+  data[, c("HomeWins", "AwayWins", "Draws", "AvgHomeGoals", "AvgAwayGoals") := 
+         as.data.table(results_df)]
+  
+  return(data)
+}
+
+simulate.grid.of.poissons <- function(numSims)
+{
+  initial_data <- expand.grid(EHG = seq(0.25, 4, by = 0.25), EAG = seq(0.25, 4, by = 0.25))
+  results_table <- data.table(initial_data)
+  # Call the function to simulate matches for each pair and store results in the original data table
+  final_results_table <- simulate.many.games(results_table, numSims)
+  return(final_results_table)
+}
+
+
 
 simulate.many.seasons <- function(remMatches,
                                   numSims = 100,
@@ -699,9 +749,19 @@ iSim <- 5000
 
 ## Add games played but not yet in .csv file
 ## Can also add games we want to "force" to certain outcomes as scenarios
-# pl <- add.game(pl, "Leeds", 2, "Newcastle", 2)
+pl <- add.game(pl, "Aston Villa", 4, "Nott'm Forest", 2)
+pl <- add.game(pl, "Brighton", 1, "Everton", 1)
+pl <- add.game(pl, "Crystal Palace", 3, "Burnley", 0)
+pl <- add.game(pl, "Man United", 1, "Fulham", 2)
+pl <- add.game(pl, "Bournemouth", 0, "Man City", 1)
+pl <- add.game(pl, "Arsenal", 4, "Newcastle", 1)
 
 leagueTable <- create.league.table(pl)
+
+# Remove 10 points for Everton!
+leagueTable$Points[leagueTable$Team == "Everton"] <- 
+  leagueTable$Points[leagueTable$Team == "Everton"] - 10
+
 sortedLeagueTable <- create.sorted.league.table(leagueTable)
 
 ## graph of who's played whom and what's left
