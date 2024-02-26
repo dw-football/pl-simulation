@@ -1,18 +1,3 @@
-# need library for data frames and piping
-library(dplyr)
-library(tidyverse)
-library(reshape2)
-library(scales)
-library(ggplot2)
-library(gridExtra)
-library(formattable)
-library(htmltools)
-library(webshot)
-library(readr)
-library(data.table)
-library(future)
-library(furrr)
-
 plan(multisession)
 options(dplyr.summarise.inform = FALSE)
 
@@ -84,14 +69,14 @@ create.sorted.league.table <- function(leagueTable) {
 determine.remaining.matches <- function(league, leagueTable) {
   # create list of Matches already played in complMatch
   complMatch = paste(league$HomeTeam, league$AwayTeam, sep = " - ")
-#  browser()
+  #  browser()
   # and alphabetic list of teams in the league
-# teams <- unique(c(league$HomeTeam,league$AwayTeam)) %>% sort
+  # teams <- unique(c(league$HomeTeam,league$AwayTeam)) %>% sort
   teams <- sort(leagueTable$Team)
   numTeams <- length(teams)
   numMatches <- numTeams * (numTeams - 1)
   print(paste("numteams = ", numTeams, "numMatches = ", numMatches))
- 
+  
   # create list of remaining games
   # this one creates a kind of 'expected goals' by game for use in simulation
   # In past simulations (done in Excel), I used betting odds instead of EG
@@ -111,13 +96,13 @@ determine.remaining.matches <- function(league, leagueTable) {
                by = c("AwayTeam" = "Team")) %>%
     setNames(c("HomeTeam", "AwayTeam", "HG", "AG", "TG",
                "GS.by.H", "GC.by.H", "GS.by.A", "GC.by.A")) %>%
-# old calc
+    # old calc
     #    mutate(ExpHG = (GS.by.H / TG) * (GC.by.A / TG) * (HG / TG) * TG,
-#           ExpAG = (GS.by.A / TG) * (GC.by.H / TG) * (AG / TG) * TG) %>%
+    #           ExpAG = (GS.by.A / TG) * (GC.by.H / TG) * (AG / TG) * TG) %>%
     mutate(ExpHG = (GS.by.H / HG) * GC.by.A,
            ExpAG = (GS.by.A / AG) * GC.by.H) %>%
     ungroup()
-
+  
   numRemMatches = nrow(remMatches)
   print(paste("numRemMatches =", numRemMatches))
   remMatches %>% mutate(MatchNo = row_number() + numMatches - numRemMatches) %>%
@@ -208,7 +193,7 @@ simulate.one.game <- function(numSims, ExpHG, ExpAG) {
   # Simulate home and away goals
   homeGoals <- rpois(numSims, lambda = ExpHG)
   awayGoals <- rpois(numSims, lambda = ExpAG)
-
+  
   # Calculate match outcomes
   homeWins <- sum(homeGoals > awayGoals)
   awayWins <- sum(awayGoals > homeGoals)
@@ -261,35 +246,35 @@ simulate.many.seasons <- function(remMatches,
 {
   n <- nrow(remMatches) # do we need here?
   
-#  pb <- winProgressBar(title = "Running Simulations", 
-#                       label = "Simulating ... 0% done", 
-#                       min = 0, 
-#                       max = numSims, 
-#                       initial = 0)
+  #  pb <- winProgressBar(title = "Running Simulations", 
+  #                       label = "Simulating ... 0% done", 
+  #                       min = 0, 
+  #                       max = numSims, 
+  #                       initial = 0)
   
-   allScores <- data.frame(SimNo = rep(1:numSims, each = n),
+  allScores <- data.frame(SimNo = rep(1:numSims, each = n),
                           HomeTeam = rep(remMatches$HomeTeam, numSims),
                           HG = rep(NA, n * numSims),
                           AwayTeam = rep(remMatches$AwayTeam, numSims),
                           AG = rep(NA, n * numSims))
-   
-#   OLD code w/ for loop, replaced by ChatGPT recommended lapply 2023-05-08
-#   for (i in 1:numSims){
-#     scores <- simulate.one.season(remMatches, neutralize)  
-#     allScores[(n * (i-1) + 1):(n * i), c("HG", "AG")] <- select(scores, HG, AG)
-#     
-#     info <- sprintf("Simulating ... %d%% done", round((i/numSims)*100))
-#     setWinProgressBar(pb, i, label = info)  
-#   }
-
-   simResults <- lapply(1:numSims, function(i) {
-     scores <- simulate.one.season(remMatches, neutralize)
-     cbind(scores, SimNo = i)
-   })
-   allScores <- do.call(rbind, simResults)
-      
-#   close(pb)
-   return(allScores)
+  
+  #   OLD code w/ for loop, replaced by ChatGPT recommended lapply 2023-05-08
+  #   for (i in 1:numSims){
+  #     scores <- simulate.one.season(remMatches, neutralize)  
+  #     allScores[(n * (i-1) + 1):(n * i), c("HG", "AG")] <- select(scores, HG, AG)
+  #     
+  #     info <- sprintf("Simulating ... %d%% done", round((i/numSims)*100))
+  #     setWinProgressBar(pb, i, label = info)  
+  #   }
+  
+  simResults <- lapply(1:numSims, function(i) {
+    scores <- simulate.one.season(remMatches, neutralize)
+    cbind(scores, SimNo = i)
+  })
+  allScores <- do.call(rbind, simResults)
+  
+  #   close(pb)
+  return(allScores)
 }
 
 check.individual.game <- function(scores, numSims, Home, Away) {
@@ -306,7 +291,7 @@ check.individual.game <- function(scores, numSims, Home, Away) {
   print(paste0("Draws:  ", draws, " (", draws/numSims*100, "%)"))
   print(paste0("HG/game = ", homeGoals/numSims, " AG/game = ",awayGoals/numSims))
 }
-      
+
 check.comparative.rankings <- function(allSims, numSims, T1, T2) {
   longTeams <- dplyr::filter(allSims, Team == T1 | Team == T2)
   wideTeams <- reshape2::dcast(longTeams, SimNo ~ Team, value.var = "Rank")
@@ -371,8 +356,8 @@ calc.points.and.rank <- function(allScores, leagueTable, numSims) {
   n <- length(teams)
   
   simResults <- lapply(1:numSims, function(i) {
-# simResults <- parLapply(1:numSims, function(i) {
-   res <- summarize.one.season.results(leagueTable, allScores[allScores$SimNo == i,])
+    # simResults <- parLapply(1:numSims, function(i) {
+    res <- summarize.one.season.results(leagueTable, allScores[allScores$SimNo == i,])
     data.frame(Team = rep(teams, 1),
                SimNo = rep(i, n),
                Pts = res$Pts,
@@ -417,7 +402,7 @@ calc.points.and.rank <- function(allScores, leagueTable, numSims) {
 #######################
 create.finishing.odds.table <- function(allSims, placement, operator) {
   numSims <- nrow(allSims) / length(unique(allSims$Team))
-
+  
   ifelse(operator == "==",
          rt <- filter(allSims, Rank == placement),
          ifelse (operator == "<",
@@ -436,43 +421,45 @@ create.finishing.odds.table <- function(allSims, placement, operator) {
 # Plot Relegation Odds  ---------
 #
 # plots a team's points & relegations possibilities
-#######################
-plot.relegation.odds <- function(team, allSims, numSims) {
+#####################
+plot.relegation.odds <- function(team, all_sims, num_sims) {
   # placement for one team
-  # allSims %>% filter(Team == team) %>% select(Rank) %>% table/iSim
+  # all_sims %>% filter(Team == team) %>% select(Rank) %>% table/num_sims
   # points distribution for one team
-  # allSims %>% filter(Team == team) %>% select(Pts) %>% table/iSim
-  teamSim <- allSims %>% filter(Team == team) %>% mutate(relegated = Rank > 17)
-  teamResultsTable <- teamSim %>% 
+  # all_sims %>% filter(Team == team) %>% select(Pts) %>% table/num_sims
+  team_sim <- all_sims %>% filter(Team == team) %>% mutate(relegated = Rank > 17)
+  team_results_table <- team_sim %>% 
     group_by(Pts) %>% 
-    summarize(PtsLikelihood = n() / numSims, RelLikelihood = sum(relegated) / n())
+    summarize(Pts_likelihood = n() / num_sims, Rel_likelihood = sum(relegated) / n())
   # Show team's average points
-  teamMeanPts = mean(teamSim$Pts)
+  team_mean_pts = mean(team_sim$Pts)
   # Show team's odds of relegation
-  teamRelegationOdds = sum(teamSim$relegated) / numSims * 100
+  team_relegation_odds = sum(team_sim$relegated) / num_sims * 100
   # Show reults in graph
-  teamResultsTable <- mutate(teamResultsTable, 
-                             NonRelOdds = PtsLikelihood * (1-RelLikelihood))
-  g <- ggplot(teamResultsTable, aes(x = Pts)) +
-    geom_col(aes(y=PtsLikelihood, fill = "PtsLikelihood")) +
-    geom_col(aes(y=NonRelOdds, fill = "NonRelOdds")) +
+  team_results_table <- mutate(team_results_table, 
+                             Non_rel_odds = Pts_likelihood * (1-Rel_likelihood))
+  g <- ggplot(team_results_table, aes(x = Pts)) +
+    geom_col(aes(y=Pts_likelihood, fill = "PtsLikelihood")) +
+    geom_col(aes(y=Non_rel_odds, fill = "NonRelOdds")) +
     labs(title = paste(team, "Final Placement Distribution"),
-         subtitle = paste0(round(teamMeanPts,1), " mean Points; ", round(teamRelegationOdds,1), 
-                          "% odds of relegation -- (", iSim, " sims)"),
+         subtitle = paste0(round(team_mean_pts,1), " mean Points; ", 
+                           round(team_relegation_odds,1), 
+                           "% odds of relegation -- (", num_sims, " sims)"),
          caption = "Source:  dw simulation model") +
     scale_fill_manual(name="",
                       labels = c("Staying Up in %", "Relegation in %"),
                       values = c("NonRelOdds"="Green", "PtsLikelihood"="Red")) +
     scale_x_continuous("Points in Final Table",
-                       breaks = seq(min(teamResultsTable$Pts),max(teamResultsTable$Pts), 
+                       breaks = seq(min(team_results_table$Pts),
+                                    max(team_results_table$Pts), 
                                     by = 1)) +
     scale_y_continuous(labels = percent_format(accuracy=1),
-                       breaks = seq(0, max(teamResultsTable$PtsLikelihood), by = 0.02)) +
+                       breaks = seq(0, max(team_results_table$Pts_likelihood), by = 0.02)) +
     theme(panel.grid.minor = element_blank(), legend.position = "none",
           axis.text.x = element_text(color = "grey20", size = 8, face = "plain"),
           plot.title = element_text(size=12),
           plot.subtitle = element_text(size=8))
-        
+  
   return(g)
 }
 
@@ -484,7 +471,7 @@ plot.relegation.odds <- function(team, allSims, numSims) {
 # plots a team's points & ranking
 #######################
 plot.points.vs.rank <- function(team, allSims, numSims, numTeams = 20) {
-
+  
   teamSim <- allSims %>% filter(Team == team) 
   teamResultsByPointsOnly <- 
     teamSim %>% 
@@ -642,7 +629,7 @@ print.formatted.538 <- function(t)
                       Top7 = pos_formatter,
                       Rel = neg_formatter
                     ))
-
+  
   export_formattable(f1, "table.png")
   return (f1)
 }  
@@ -660,7 +647,7 @@ print.maccabi.report = function(sims, title = "Maccabi Report")
   print ("Rank distribution")
   print (rank)
   print(prop.table(rank))
-
+  
   cross <- table(sims$Pts, sims$Rank)  
   print ("Cross Distribution")
   print (cross)
@@ -670,13 +657,13 @@ print.maccabi.report = function(sims, title = "Maccabi Report")
 
 run.maccabi <- function(iSim = 100)
 {
-# maccSchedule <- read_csv("data/Maccabi 55 schedule 2023.csv")
-# maccSchedule <- read_csv("data/Maccabi 55 sched-2.csv")
-# maccSchedule <- read_csv("data/Maccabi 55 sched after game 1.csv")
-# maccSchedule <- read_csv("data/Maccabi 55 schedule after game 2.csv")
-# maccSchedule <- read_csv("data/Maccabi 55 schedule after USA GB.csv")
-# maccSchedule <- read_csv("data/Maccabi 55 schedule after ARG MEX.csv")
-#  maccSchedule <- read_csv("data/Maccabi 55 schedule after ARG MEX USA GB.csv")
+  # maccSchedule <- read_csv("data/Maccabi 55 schedule 2023.csv")
+  # maccSchedule <- read_csv("data/Maccabi 55 sched-2.csv")
+  # maccSchedule <- read_csv("data/Maccabi 55 sched after game 1.csv")
+  # maccSchedule <- read_csv("data/Maccabi 55 schedule after game 2.csv")
+  # maccSchedule <- read_csv("data/Maccabi 55 schedule after USA GB.csv")
+  # maccSchedule <- read_csv("data/Maccabi 55 schedule after ARG MEX.csv")
+  #  maccSchedule <- read_csv("data/Maccabi 55 schedule after ARG MEX USA GB.csv")
   maccSchedule <- read_csv("data/Maccabi 55 schedule after game 3.csv")
   # maccSchedule <- read_csv("data/Maccabi 55 schedule no USA.csv")
   
@@ -685,19 +672,19 @@ run.maccabi <- function(iSim = 100)
   mScores <- simulate.many.seasons(maccSchedule, iSim, FALSE)
   check.individual.game(mScores, iSim, "Australia", "USA")
   
-# maccTable <- read.csv("data/Maccabi blank league table 2023.csv")
-# maccTable <- read.csv("data/Maccabi league table USA 1 BRZ 2.csv")
-# maccTable <- read.csv("data/Maccabi league table USA draw and others win.csv")
-# maccTable <- read.csv("data/Maccabi league table after game 1.csv")
-# maccTable <- read.csv("data/Maccabi league table USA 2 ARG 2.csv")
-# maccTable <- read.csv("data/Maccabi league table 2023.12.30.csv")
-# maccTable <- read.csv("data/Maccabi league table USA 2 GB 0.csv")
-# maccTable <- read.csv("data/Maccabi league table USA 0 GB 1.csv")
-# maccTable <- read.csv("data/Maccabi league table USA LW.csv")
-# maccTable <- read.csv("data/Maccabi league table ARG 3 MEX 1.csv")
-# maccTable <- read.csv("data/Maccabi league table ARG 3 MEX 1 USA 2 GB 0.csv")
-# maccTable <- read.csv("data/Maccabi league table ARG 3 MEX 1 USA 1 GB 1.csv")
-# maccTable <- read.csv("data/Maccabi league table ARG 3 MEX 1 USA 0 GB 1.csv")
+  # maccTable <- read.csv("data/Maccabi blank league table 2023.csv")
+  # maccTable <- read.csv("data/Maccabi league table USA 1 BRZ 2.csv")
+  # maccTable <- read.csv("data/Maccabi league table USA draw and others win.csv")
+  # maccTable <- read.csv("data/Maccabi league table after game 1.csv")
+  # maccTable <- read.csv("data/Maccabi league table USA 2 ARG 2.csv")
+  # maccTable <- read.csv("data/Maccabi league table 2023.12.30.csv")
+  # maccTable <- read.csv("data/Maccabi league table USA 2 GB 0.csv")
+  # maccTable <- read.csv("data/Maccabi league table USA 0 GB 1.csv")
+  # maccTable <- read.csv("data/Maccabi league table USA LW.csv")
+  # maccTable <- read.csv("data/Maccabi league table ARG 3 MEX 1.csv")
+  # maccTable <- read.csv("data/Maccabi league table ARG 3 MEX 1 USA 2 GB 0.csv")
+  # maccTable <- read.csv("data/Maccabi league table ARG 3 MEX 1 USA 1 GB 1.csv")
+  # maccTable <- read.csv("data/Maccabi league table ARG 3 MEX 1 USA 0 GB 1.csv")
   maccTable <- read.csv("data/Maccabi league table after 3 games.csv")
   
   simsAll <- calc.points.and.rank(mScores, maccTable, iSim)
@@ -705,163 +692,23 @@ run.maccabi <- function(iSim = 100)
   print(gold)
   bronze <- create.finishing.odds.table(simsAll, 5, "<")
   print(bronze)
- 
-#  freqTableAllTeams <- table(pr$Pts, pr$Rank)
-   simsUSA <- subset(simsAll, Team == "USA")
-   simsARG <- subset(simsAll, Team == "Argentina")
-#  freqTableUSA <- table(prUSA$Pts, prUSA$Rank)
-   print.maccabi.report(simsAll, "All Teams")
-   print.maccabi.report(simsUSA, "USA")
-   print.maccabi.report(simsARG, "Argentina")
-      
-   p <- plot.points.vs.rank("USA", simsAll, iSim, 6)
-   print (p)
-#  pctTableAllTeams <- prop.table(freqTableAllTeams, margin = 1)
-    
-#  distTable <- data.table(xtabs(~ Pts + Rank, data = pr))
-#  distTable$Pts <- as.integer(distTable$Pts)
-#  distTable$Rank <- as.integer(distTable$Rank)
-#  freqTableAllTeams <- dcast(distTable, Pts ~ Rank, value.var="N", fun.aggregate = sum)
-#  dist
+  
+  #  freqTableAllTeams <- table(pr$Pts, pr$Rank)
+  simsUSA <- subset(simsAll, Team == "USA")
+  simsARG <- subset(simsAll, Team == "Argentina")
+  #  freqTableUSA <- table(prUSA$Pts, prUSA$Rank)
+  print.maccabi.report(simsAll, "All Teams")
+  print.maccabi.report(simsUSA, "USA")
+  print.maccabi.report(simsARG, "Argentina")
+  
+  p <- plot.points.vs.rank("USA", simsAll, iSim, 6)
+  print (p)
+  #  pctTableAllTeams <- prop.table(freqTableAllTeams, margin = 1)
+  
+  #  distTable <- data.table(xtabs(~ Pts + Rank, data = pr))
+  #  distTable$Pts <- as.integer(distTable$Pts)
+  #  distTable$Rank <- as.integer(distTable$Rank)
+  #  freqTableAllTeams <- dcast(distTable, Pts ~ Rank, value.var="N", fun.aggregate = sum)
+  #  dist
   
 }
-
-
-#################################
-#    MAIN CODE ------------------
-#    Data came from http://www.football-data.co.uk/englandm.php
-#################################
-
-# Read E0.csv that contains all games played so far
-# setwd("C:/Users/dwarren/Google Drive/Computing/R/SoccerSimulation")
-plInput <- read_csv("data/e0.csv")
-# and then narrow to only stats we use
-pl <- select(plInput, HomeTeam, AwayTeam, FTR, FTHG, FTAG) 
-
-## Test out Big 6 head to head contests and show who reffed
-# big6 <- c("Liverpool", "Man City", "Man United", "Chelsea", "Arsenal", 
-#           "Tottenham")
-# big6h2h = filter(pl, HomeTeam %in% big6 & AwayTeam %in% big6)
-# count(big6h2h, Referee, sort = TRUE)
-
-# set # of simulations
-iSim <- 5000
-
-## Add games played but not yet in .csv file
-## Can also add games we want to "force" to certain outcomes as scenarios
-pl <- add.game(pl, "Aston Villa", 4, "Nott'm Forest", 2)
-pl <- add.game(pl, "Brighton", 1, "Everton", 1)
-pl <- add.game(pl, "Crystal Palace", 3, "Burnley", 0)
-pl <- add.game(pl, "Man United", 1, "Fulham", 2)
-pl <- add.game(pl, "Bournemouth", 0, "Man City", 1)
-pl <- add.game(pl, "Arsenal", 4, "Newcastle", 1)
-
-leagueTable <- create.league.table(pl)
-
-# Remove 10 points for Everton!
-leagueTable$Points[leagueTable$Team == "Everton"] <- 
-  leagueTable$Points[leagueTable$Team == "Everton"] - 10
-
-sortedLeagueTable <- create.sorted.league.table(leagueTable)
-
-## graph of who's played whom and what's left
-seasonMatrix <- ggplot(pl, aes(x=AwayTeam, y=HomeTeam, color=FTR)) +
-  geom_point(size=2) +
-  theme(axis.text.x = element_text(angle=90, hjust=1, vjust=0)) +
-  ggtitle("Premier League 2022-23 Results So Far") +
-  scale_color_manual(name = "Result", 
-                     labels = c("Away win", "Draw", "Home win"),
-                     values = c("red", "black","green")) +
-  labs(x = "Away Team", y = "Home Team")
-seasonMatrix
-
-remMatches <- determine.remaining.matches(pl, leagueTable)
-
-## The neutralize flag, if turned on, allows me to change the model
-## such that every team has same chance of beating, drawing, or losing
-## to every other.  It's a good model check and shows (by comparison)
-## the impact of prior results on the model
-allScores <- simulate.many.seasons(remMatches, iSim, neutralize=FALSE)
-# allScores <- simulate.many.seasons(remMatches, iSim, neutralize=TRUE)
-allSims <- calc.points.and.rank(allScores, leagueTable, iSim)
-
-relegation <- create.finishing.odds.table(allSims, 17, ">")
-# For Championship
-# relegation <- create.finishing.odds.table(allSims, 21, ">")
-relegation
-
-# run this if want to permutate on a single game
-# permutatedFinish <- permutate.a.result(allScores, leagueTable, iSim, "Chelsea",
-#                                       "Nott'm Forest", 17, ">")
-permutatedFinish <- permutate.a.result(allScores, leagueTable, iSim,
-                                      "Liverpool", "Man City", 2, "<")
-permutatedFinish <- permutate.a.result(allScores, leagueTable, iSim,
-                                       "Man City", "Arsenal", 2, "<")
-
-# run this if want to see how 2 teams did against each other
-check.individual.game(allScores, iSim, "Liverpool", "Man City")
-check.individual.game(allScores, iSim, "Man City", "Arsenal")
-
-# run this to see odds of teams finishing ahead of each other
-check.comparative.rankings(allSims, iSim, "Arsenal", "Tottenham")
-# check.comparative.rankings(allSims, iSim, "Liverpool", "Brighton")
-# check.comparative.rankings(allSims, iSim, "Southampton", "Leeds")
-
-t <- create.538.table(allSims, sortedLeagueTable)
-p <- print.formatted.538(t)
-p
-
-p <- plot.relegation.odds("West Ham", allSims, iSim)
-p <- plot.relegation.odds("Everton", allSims, iSim)
-p
-# # pA <- plot.relegation.odds("Aston Villa", allSims, iSim)
-# # pB <- plot.relegation.odds("Bournemouth", allSims, iSim)
-# 
-teams_to_plot <- c("Everton", "Leicester", "Leeds")
-# teams_to_plot <- c("West Ham", "Crystal Palace", "Bournemouth", "Wolves")
-plots <- lapply(teams_to_plot, plot.relegation.odds, allSims, iSim)
-nTeams <- length(plots)
-nc <- ceiling(sqrt(nTeams))
-grid.arrange(grobs=plots, ncol=nc)
-gr <- arrangeGrob(grobs = plots, ncol=nc)
-ggsave("relegation.png", gr, width=8, height=6, units="in")
-
-cl_teams <- c("Newcastle", "Man United", "Tottenham", "Aston Villa", "Liverpool",
-              "Brighton")
-top4_odds <- lapply(cl_teams, check.placement.odds, allSims, iSim, 4)
-europa_teams <- c("West Ham", "Tottenham", "Everton", "Arsenal")
-top6_odds <- lapply(europa_teams, check.placement.odds, allSims, iSim, 6)
-top7_odds <- lapply(europa_teams, check.placement.odds, allSims, iSim, 7)
-
-# teams_to_plot <- c("Newcastle", "Man United", "Tottenham", "Aston Villa",
-#                   "Liverpool", "Brighton")
-teams_to_plot <- c("Tottenham", "Liverpool", "Brighton")
-plots <- lapply(teams_to_plot, plot.points.vs.rank, allSims, iSim)
-nTeams <- length(plots)
-nc <- ceiling(sqrt(nTeams))
-grid.arrange(grobs=plots, ncol=nc)
-gr <- arrangeGrob(grobs = plots, ncol=nc)
-ggsave("top of table.png", gr, width=8, height=6, units="in")
-
-plot.points.vs.rank("Liverpool", allSims, iSim)
-plot.points.vs.rank("Tottenham", allSims, iSim)
-plot.points.vs.rank("West Ham", allSims, iSim)
-
-# # each team's probabilities per position
-table(allSims$Team, allSims$Rank)/iSim
-
-## to plot relegation over time; need to build different function
-## ggplot(rel, aes(x = Gameweek, y = Percent, color = Team)) + 
-##    geom_text_repel(aes(label=Team),color = "black", size=3) + 
-##    scale_x_discrete(breaks = c("28.9","29"), labels = c("28.9","29"))
-
-
-###
-###
-### Other things I'd like to be able to do:
-### 1)
-### set/change odds of individual games
-### and rerun simulation
-### 2) 
-### calculate game 'importance' (by running simulation if team wins/draws/loses 
-### affecting ultimate standing 1-4, 5-7, 17/18)
