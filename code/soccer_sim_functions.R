@@ -1,5 +1,5 @@
-plan(multisession)
-options(dplyr.summarise.inform = FALSE)
+# plan(multisession)
+# options(dplyr.summarise.inform = FALSE)
 
 ###
 # Create.League.Table()
@@ -400,18 +400,18 @@ calc.points.and.rank <- function(allScores, leagueTable, numSims) {
 #
 # returns sorted filtered list of teams above, below, or at a certain league position
 #######################
-create.finishing.odds.table <- function(allSims, placement, operator) {
-  numSims <- nrow(allSims) / length(unique(allSims$Team))
+create.finishing.odds.table <- function(all_sims, placement, operator) {
+  num_sims <- nrow(all_sims) / length(unique(all_sims$Team))
   
   ifelse(operator == "==",
-         rt <- filter(allSims, Rank == placement),
-         ifelse (operator == "<",
-                 rt <- filter(allSims, Rank < placement),
-                 rt <- filter(allSims, Rank > placement))
+         rt <- filter(all_sims, Rank == placement),
+        ifelse (operator == "<",
+                 rt <- filter(all_sims, Rank < placement),
+                 rt <- filter(all_sims, Rank > placement))
   )
   rt <- rt %>% 
     group_by(Team) %>% 
-    summarize(Count = n(), Percent= Count / numSims * 100) %>% 
+    summarize(Count = n(), Percent= Count / num_sims * 100) %>% 
     arrange(desc(Count)) %>%
     mutate(Team = as.character(Team))
 }
@@ -520,8 +520,8 @@ plot.points.vs.rank <- function(team, allSims, numSims, numTeams = 20) {
 #
 # plots a team's points & ranking
 #######################
-check.placement.odds <- function(team, allSims, numSims, spot = 4) {
-  teamSim <- allSims %>% filter(Team == team) 
+check.placement.odds <- function(team, all_sims, num_sims, spot = 4) {
+  teamSim <- all_sims %>% filter(Team == team) 
   teamPlace <- 
     teamSim %>% 
     group_by(Pts) %>% 
@@ -557,74 +557,81 @@ export_formattable <- function(f, file, width = "100%", height = NULL,
 }
 
 
-permutate.a.result <- function(allScores, leagueTable, iSim, Home, Away, 
+permutate.a.result <- function(all_scores, league_table, num_sims, Home, Away, 
                                placement, operator) {
-  homeWins <- mutate(allScores, 
+  home_wins <- mutate(all_scores, 
                      HG = replace(HG, HomeTeam == Home & AwayTeam == Away, 2),
                      AG = replace(AG, HomeTeam == Home & AwayTeam == Away, 1))
-  awayWins <- mutate(allScores, 
+  away_wins <- mutate(all_scores, 
                      HG = replace(HG, HomeTeam == Home & AwayTeam == Away, 1),
                      AG = replace(AG, HomeTeam == Home & AwayTeam == Away, 2))
-  draws <- mutate(allScores, 
+  draws <- mutate(all_scores, 
                   HG = replace(HG, HomeTeam == Home & AwayTeam == Away, 1),
                   AG = replace(AG, HomeTeam == Home & AwayTeam == Away, 1))
-  homeWinSims <- calc.points.and.rank(homeWins, leagueTable, iSim)
-  awayWinSims <- calc.points.and.rank(awayWins, leagueTable, iSim)
-  drawSims <- calc.points.and.rank(draws, leagueTable, iSim)
+  home_win_sims <- calc.points.and.rank(home_wins, league_table, num_sims)
+  away_win_sims <- calc.points.and.rank(away_wins, league_table, num_sims)
+  draw_sims <- calc.points.and.rank(draws, league_table, num_sims)
   
-  H <- create.finishing.odds.table(homeWinSims, placement, operator)
-  A <- create.finishing.odds.table(awayWinSims, placement, operator)
-  D <- create.finishing.odds.table(drawSims, placement, operator)
+  H <- create.finishing.odds.table(home_win_sims, placement, operator)
+  A <- create.finishing.odds.table(away_win_sims, placement, operator)
+  D <- create.finishing.odds.table(draw_sims, placement, operator)
   return(c(H, A, D))
 }
 
-create.538.table <- function(allSims, sortedLeagueTable) {
-  
+
+create.538.table <- function(all_sims, sorted_league_table) {
   # odds of league winner
-  # allSims %>% filter(Rank == 1) %>% select(Team) %>% table/iSim
-  winner <- create.finishing.odds.table(allSims, 1, "==")
+  # all_sims %>% filter(Rank == 1) %>% select(Team) %>% table/iSim
+  winner <- create.finishing.odds.table(all_sims, 1, "==")
   winner
   
-  # odds of top 4, 7
+  # odds of top 4,5,6,7
   # allSims %>% filter(Rank < 5) %>% select(Team) %>% table/iSim
-  slt <- left_join(sortedLeagueTable, select(winner, c(Team, Win = Percent)))
-  top4 <- create.finishing.odds.table(allSims, 5, "<")
-  top6 <- create.finishing.odds.table(allSims, 7, "<")
-  top7 <- create.finishing.odds.table(allSims, 8, "<")
+  slt <-
+    left_join(sorted_league_table, select(winner, c(Team, Win = Percent)))
+  top4 <- create.finishing.odds.table(all_sims, 5, "<")
+  top5 <- create.finishing.odds.table(all_sims, 6, "<")
+  top6 <- create.finishing.odds.table(all_sims, 7, "<")
+  top7 <- create.finishing.odds.table(all_sims, 8, "<")
+  relegation <- create.finishing.odds.table(all_sims, 17, ">")
   slt <- left_join(slt, select(top4, c(Team, Top4 = Percent)))
+  slt <- left_join(slt, select(top5, c(Team, Top5 = Percent)))
   slt <- left_join(slt, select(top6, c(Team, Top6 = Percent)))
   slt <- left_join(slt, select(top7, c(Team, Top7 = Percent)))
   slt <- left_join(slt, select(relegation, c(Team, Rel = Percent)))
   
   fnc <- function(var, decimal_places) {
-    var = sprintf(paste0("%1.",decimal_places,"f"), var)
-    var[var=="NA"] = ""
+    var = sprintf(paste0("%1.", decimal_places, "f"), var)
+    var[var == "NA"] = ""
     var
   }
   
-  vars <- c('Win', 'Top4', 'Top6', 'Top7', 'Rel')
-  slt[ , vars] <- mapply(fnc, slt[ , vars], 1)
+  vars <- c('Win', 'Top4', 'Top5', 'Top6', 'Top7', 'Rel')
+  slt[, vars] <- mapply(fnc, slt[, vars], 1)
   slt <- slt %>% mutate(Rank = 1:n()) %>%
-    select(Rank, Team, Played, Points, GD, Win, Top4, Top6, Top7, Rel)
+    select(Rank, Team, Played, Points, GD, Win, Top4, Top5, Top6, Top7, Rel)
 }
 
 print.formatted.538 <- function(t)
 {  
   pos_formatter <- formatter("span", 
-                             style = x ~ style(color = ifelse(as.numeric(x)>50, "green", "gray")),
+                             style = x ~ style(color = ifelse(as.numeric(x)>50,
+                                                              "green", "gray")),
                              #                               x ~ icontext(ifelse(x == "", "remove", "ok")),
                              x ~ sprintf(x))
   neg_formatter <- formatter("span", 
-                             style = x ~ style(color = ifelse(as.numeric(x)>50, "red", "gray")),
+                             style = x ~ style(color = ifelse(as.numeric(x)>50,
+                                                              "red", "gray")),
                              #                               x ~ icontext(ifelse(x == "", "remove", "ok")),
                              x ~ sprintf(x))
   
   f1 <- formattable(t, 
-                    align = c("l", "c", "c", "c", "c", "c", "c", "c", "c"),
+                    align = c("l", "c", "c", "c", "c", "c", "c", "c", "c", "c"),
                     formatters = list(
                       Rank = formatter("span", x ~ sprintf("%.0f", x)),
                       Win = pos_formatter,
                       Top4 = pos_formatter,
+                      Top5 = pos_formatter,
                       Top6 = pos_formatter,
                       Top7 = pos_formatter,
                       Rel = neg_formatter
@@ -633,6 +640,35 @@ print.formatted.538 <- function(t)
   export_formattable(f1, "table.png")
   return (f1)
 }  
+
+print.kbl.538 <- function(t) {
+  # Define formatting functions for conditional coloring
+  pos_formatter <- function(x) {
+    ifelse(as.numeric(x) > 50,
+           cell_spec(x, color = "green"),
+           cell_spec(x, color = "gray"))
+  }
+  
+  neg_formatter <- function(x) {
+    ifelse(as.numeric(x) > 50,
+           cell_spec(x, color = "red"),
+           cell_spec(x, color = "gray"))
+  }
+  
+  # Create the kable table
+  kable(t, align = "ccccccc") %>%
+    kable_classic() %>%
+    kable_styling(bootstrap_options = "striped") %>%
+#    column_spec(1, bold = T) %>%  # Make the first column bold
+#    column_spec(2:6, formatter = "span", format = "f", digits = 0) %>%  # Apply numeric formatting to columns 2-6
+#    column_spec(2:6, format = "f", digits = 0) %>%  # Specify 0 decimal places for columns 2-6
+#    column_spec(7, width = "5em") %>%  # Adjust column widths
+#    column_spec(c("Win", "Top4", "Top5", "Top6", "Top7"), decorator = pos_formatter) %>%  # Apply positive formatter
+#    column_spec("Rel", decorator = neg_formatter) %>%  # Apply negative formatter
+    save_kable("table.png")  # Save the table as a PNG image
+  
+}
+
 
 print.maccabi.report = function(sims, title = "Maccabi Report")
 {

@@ -20,12 +20,21 @@ pl <- select(pl_input, HomeTeam, AwayTeam, FTR, FTHG, FTAG)
 
 ## Add games played but not yet in .csv file
 ## Can also add games we want to "force" to certain outcomes as scenarios
-pl <- add.game(pl, "Aston Villa", 4, "Nott'm Forest", 2)
-pl <- add.game(pl, "Brighton", 1, "Everton", 1)
-pl <- add.game(pl, "Crystal Palace", 3, "Burnley", 0)
-pl <- add.game(pl, "Man United", 1, "Fulham", 2)
-pl <- add.game(pl, "Bournemouth", 0, "Man City", 1)
-pl <- add.game(pl, "Arsenal", 4, "Newcastle", 1)
+# pl <- add.game(pl, "Everton", 1, "West Ham", 3)
+# pl <- add.game(pl, "Tottenham", 3, "Crystal Palace", 1)
+# pl <- add.game(pl, "Fulham", 3, "Brighton", 0)
+# pl <- add.game(pl, "Brentford", 2, "Chelsea", 2)
+# pl <- add.game(pl, "Newcastle", 3, "Wolves", 0)
+# pl <- add.game(pl, "Nott'm Forest", 0, "Liverpool", 1)
+# pl <- add.game(pl, "Luton", 2, "Aston Villa", 3)
+# pl <- add.game(pl, "Burnley", 0, "Bournemouth", 2)
+# pl <- add.game(pl, "Sheffield United", 0, "Arsenal", 6)
+
+pl <- add.game(pl, "Man United", 2, "Everton", 0)
+pl <- add.game(pl, "Bournemouth", 2, "Sheffield United", 2)
+pl <- add.game(pl, "Crystal Palace", 1, "Luton", 1)
+pl <- add.game(pl, "Wolves", 2, "Fulham", 1)
+pl <- add.game(pl, "Arsenal", 2, "Brentford", 1)
 
 league_table <- create.league.table(pl)
 
@@ -47,4 +56,7 @@ season_matrix <- ggplot(pl, aes(x=AwayTeam, y=HomeTeam, color=FTR)) +
 season_matrix
 
 rem_matches <- determine.remaining.matches(pl, league_table)
+write.csv(league_table, file = "./data/league_table.csv")
+write.csv(sorted_league_table, file = "./data/sorted_league_table.csv")
+write.csv(rem_matches, file = "./data/rem_matches.csv")
 

@@ -1,0 +1,57 @@
+---
+title: "Premier League Simulation 2024"
+author: "dw"
+date:  "`r Sys.Date()`"
+format: html
+editor: visual
+echo: FALSE
+message: FALSE
+warning: FALSE
+---
+
+## League Table and Odds
+
+```{r}
+#| echo=FALSE
+sourcefile <- file.path(dir = "./code", base = "library_calls.R")
+source(sourcefile)  # Load the script
+sourcefile <- file.path(dir = "./code", base = "soccer_sim_functions.R")
+source(sourcefile)  # Load the script
+
+## Read in saved data we need
+## this brings in all_sims and all_scores
+load("./data/sim_data.Rdata")
+num_sims <- max(all_sims$SimNo)
+
+#this brings in league_table and sorted_league_table
+league_table <- read.csv("./data/league_table.csv")
+sorted_league_table <- read.csv("./data/sorted_league_table.csv")
+
+t <- create.538.table(all_sims, sorted_league_table)
+kable(t, align = "lcccccc") %>%
+  kable_classic(full_width = F) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+## Championship
+
+```{r}
+#| echo=FALSE
+
+plot.points.vs.rank("Liverpool", all_sims, num_sims)
+plot.points.vs.rank("Man City", all_sims, num_sims)
+plot.points.vs.rank("Arsenal", all_sims, num_sims)
+```
+
+## Relegation
+
+```{r}
+#| echo=FALSE
+
+relegation <- create.finishing.odds.table(all_sims, 17, ">")
+kable(relegation) %>% kable_classic (full_width = F)
+
+plot.relegation.odds("Luton", all_sims, num_sims)
+plot.relegation.odds("Everton", all_sims, num_sims)
+plot.relegation.odds("Nott'm Forest", all_sims, num_sims)
+```
