@@ -19,22 +19,21 @@ pl <- select(pl_input, HomeTeam, AwayTeam, FTR, FTHG, FTAG)
 # count(big6h2h, Referee, sort = TRUE)
 
 ## Add games played but not yet in .csv file
-## Can also add games we want to "force" to certain outcomes as scenarios
-# pl <- add.game(pl, "Everton", 1, "West Ham", 3)
-# pl <- add.game(pl, "Tottenham", 3, "Crystal Palace", 1)
-# pl <- add.game(pl, "Fulham", 3, "Brighton", 0)
-# pl <- add.game(pl, "Brentford", 2, "Chelsea", 2)
-# pl <- add.game(pl, "Newcastle", 3, "Wolves", 0)
-# pl <- add.game(pl, "Nott'm Forest", 0, "Liverpool", 1)
-# pl <- add.game(pl, "Luton", 2, "Aston Villa", 3)
-# pl <- add.game(pl, "Burnley", 0, "Bournemouth", 2)
-# pl <- add.game(pl, "Sheffield United", 0, "Arsenal", 6)
+# ## Can also add games we want to "force" to certain outcomes as scenarios
+pl <- add.game(pl, "Burnley", 2, "Brentford", 0)
+pl <- add.game(pl, "Luton", 1, "Nott'm Forest", 1)
+pl <- add.game(pl, "Fulham", 3, "Tottenham", 0)
 
-pl <- add.game(pl, "Man United", 2, "Everton", 0)
-pl <- add.game(pl, "Bournemouth", 2, "Sheffield United", 2)
-pl <- add.game(pl, "Crystal Palace", 1, "Luton", 1)
-pl <- add.game(pl, "Wolves", 2, "Fulham", 1)
-pl <- add.game(pl, "Arsenal", 2, "Brentford", 1)
+pl <- add.game(pl, "West Ham", 1, "Aston Villa", 1)
+
+
+# pl <- add.game(pl, "Man United", 2, "Everton", 0)
+# pl <- add.game(pl, "Bournemouth", 2, "Sheffield United", 2)
+# pl <- add.game(pl, "Crystal Palace", 1, "Luton", 1)
+# pl <- add.game(pl, "Wolves", 2, "Fulham", 1)
+# pl <- add.game(pl, "Liverpool", 1, "Man City", 1)
+# pl <- add.game(pl, "Chelsea", 3, "Newcastle", 2)
+
 
 league_table <- create.league.table(pl)
 

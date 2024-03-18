@@ -535,12 +535,12 @@ check.placement.odds <- function(team, all_sims, num_sims, spot = 4) {
 #  Add.Game function ------------
 #  Add a game not yet in the downloaded file to the league results list
 #################################
-add.game <- function(league, homeTeam, homeGoals, awayTeam, awayGoals) {
-  ifelse (homeGoals > awayGoals, result <- "H",
-          ifelse (homeGoals == awayGoals, result <- "D",
+add.game <- function(league, home_team, home_goals, away_team, away_goals) {
+  ifelse (home_goals > away_goals, result <- "H",
+          ifelse (home_goals == away_goals, result <- "D",
                   result <- "A"))
-  league <- add_row(league, HomeTeam = homeTeam, AwayTeam = awayTeam,
-                    FTR = result, FTHG = homeGoals, FTAG = awayGoals)
+  league <- add_row(league, HomeTeam = home_team, AwayTeam = away_team,
+                    FTR = result, FTHG = home_goals, FTAG = away_goals)
 }
 
 
@@ -641,6 +641,39 @@ print.formatted.538 <- function(t)
   return (f1)
 }  
 
+print.538.flextable <- function(t)
+{
+  
+  # define style for border line
+  border_style = officer::fp_border(color="black", width=1)
+  
+  f1 <- flextable(t) %>%
+    theme_zebra() %>%
+    color(~ as.numeric(GD) < 0, ~ GD, color = "red") %>%
+    color(~ as.numeric(Rel) >= 50, ~ Rel, color = "red") %>%
+    color(~ as.numeric(Win) >= 50, ~ Win, color = "#4CBB17") %>%
+    color(~ as.numeric(Top4) >= 50, ~ Top4, color = "#4CBB17") %>%
+    color(~ as.numeric(Top5) >= 50, ~ Top5, color = "#4CBB17") %>%
+    color(~ as.numeric(Top6) >= 50, ~ Top6, color = "#4CBB17") %>%
+    color(~ as.numeric(Top7) >= 50, ~ Top7, color = "#4CBB17") %>%    
+    align(j = 1, align = "right") %>%
+    align(j = 2, align = "left") %>%
+    align(j = 3:11, align = "right") %>%
+    align(part = "header", align = "center") %>%   # Align header row text to center
+    width(j = 2, width = 1.3, unit = "in") %>%
+    width(j = 3:5, width = 0.5, unit = "in") %>%
+    vline(part = "all", j = 5, border = border_style) %>%  # at column 5
+    vline(part = "all", j = 10, border = border_style)     # at column 10
+  
+  save_as_image(f1, path = "table.png")
+  
+  return(f1)
+}
+
+
+### NOT USING!  Tried for a bit in 2024-03,
+### but switched to the easier to use and better flextable above
+###
 print.kbl.538 <- function(t) {
   # Define formatting functions for conditional coloring
   pos_formatter <- function(x) {

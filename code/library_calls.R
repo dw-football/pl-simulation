@@ -14,5 +14,6 @@ suppressPackageStartupMessages({
   library(data.table)
   library(future)
   library(furrr)
+  library(flextable)
   library(kableExtra)
 })

@@ -3,13 +3,15 @@ title: "Premier League Simulation 2024"
 author: "dw"
 date:  "`r Sys.Date()`"
 format: html
+extract-media: images
 editor: visual
+theme: flatly
 echo: FALSE
 message: FALSE
 warning: FALSE
 ---
 
-## League Table and Odds
+# League Table and Odds
 
 ```{r}
 #| echo=FALSE
@@ -28,30 +30,48 @@ league_table <- read.csv("./data/league_table.csv")
 sorted_league_table <- read.csv("./data/sorted_league_table.csv")
 
 t <- create.538.table(all_sims, sorted_league_table)
-kable(t, align = "lcccccc") %>%
-  kable_classic(full_width = F) %>%
-  kable_styling(bootstrap_options = c("striped", "hover"))
+print.538.flextable(t)
 ```
 
-## Championship
+{{< pagebreak >}}
 
-```{r}
-#| echo=FALSE
+# Championship
 
+```{r fig.width = 6, fig.height = 3.5}
 plot.points.vs.rank("Liverpool", all_sims, num_sims)
+```
+
+```{r fig.width = 6, fig.height = 3.5}
 plot.points.vs.rank("Man City", all_sims, num_sims)
+```
+
+```{r fig.width = 6, fig.height = 3.5}
 plot.points.vs.rank("Arsenal", all_sims, num_sims)
 ```
 
-## Relegation
+{{< pagebreak >}}
+
+# Relegation
 
 ```{r}
 #| echo=FALSE
 
 relegation <- create.finishing.odds.table(all_sims, 17, ">")
-kable(relegation) %>% kable_classic (full_width = F)
+#kable(relegation) %>% kable_classic (full_width = F)
+flextable(relegation)
 
 plot.relegation.odds("Luton", all_sims, num_sims)
 plot.relegation.odds("Everton", all_sims, num_sims)
 plot.relegation.odds("Nott'm Forest", all_sims, num_sims)
+```
+
+{{< pagebreak>}}
+
+# Europe
+
+```{r}
+plot.points.vs.rank("Man United", all_sims, num_sims)
+plot.points.vs.rank("Newcastle", all_sims, num_sims)
+plot.points.vs.rank("Brighton", all_sims, num_sims)
+plot.points.vs.rank("West Ham", all_sims, num_sims)
 ```

@@ -12,7 +12,7 @@ league_table <- read.csv("./data/league_table.csv")
 sorted_league_table <- read.csv("./data/sorted_league_table.csv")
 
 t <- create.538.table(all_sims, sorted_league_table)
-print.formatted.538(t)
+print.538.flextable(t)
 
 relegation <- create.finishing.odds.table(all_sims, 17, ">")
 # For Championship
@@ -24,14 +24,12 @@ relegation
 # permutated_finish <- permutate.a.result(all_scores, league_table, num_sims,
 #                                        "Chelsea",
 #                                       "Nott'm Forest", 17, ">")
+#permutated_finish <- permutate.a.result(all_scores, league_table, num_sims,
+#                                        "Aston Villa", "Tottenham", 5, "<")
 permutated_finish <- permutate.a.result(all_scores, league_table, num_sims,
-                                       "Sheffield United", "Arsenal", 2, "<")
-permutated_finish <- permutate.a.result(all_scores, league_table, num_sims,
-                                        "Aston Villa", "Tottenham", 5, "<")
-permutated_finish <- permutate.a.result(all_scores, league_table, num_sims,
-                                        "Liverpool", "Man City", 2, "<")
-permutated_finish <- permutate.a.result(all_scores, league_table, num_sims,
-                                        "Crystal Palace", "Luton", 17, ">")
+                                        "Luton", "Nott'm Forest", 17, ">")
+# permutated_finish <- permutate.a.result(all_scores, league_table, num_sims,
+#                                        "Crystal Palace", "Luton", 17, ">")
 
 
 # run this if want to see how 2 teams did against each other
