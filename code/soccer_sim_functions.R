@@ -575,7 +575,22 @@ permutate.a.result <- function(all_scores, league_table, num_sims, Home, Away,
   H <- create.finishing.odds.table(home_win_sims, placement, operator)
   A <- create.finishing.odds.table(away_win_sims, placement, operator)
   D <- create.finishing.odds.table(draw_sims, placement, operator)
-  return(c(H, A, D))
+  
+  # Stitch together the H, A, and D data frames
+  result <- bind_rows(
+    mutate(H, Outcome = "Home Win"),
+    mutate(A, Outcome = "Away Win"),
+    mutate(D, Outcome = "Draw")
+  ) %>%
+    pivot_wider(names_from = Outcome, values_from = c(Percent, Count)) %>%
+    rename_with(~ c(paste0(Home, " W %"), paste0(Away, " W %"), "Draw %",
+                    paste0(Home, " W Count"), paste0(Away, " W Count"), "Draw Count"), 
+                .cols = contains("Percent") | contains("Count")) %>%
+    arrange(desc(rowSums(select(., contains("Count")))))
+    
+  return(result)
+  
+#  return(c(H, A, D))
 }
 
 

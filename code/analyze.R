@@ -26,8 +26,10 @@ relegation
 #                                       "Nott'm Forest", 17, ">")
 #permutated_finish <- permutate.a.result(all_scores, league_table, num_sims,
 #                                        "Aston Villa", "Tottenham", 5, "<")
+#permutated_finish <- permutate.a.result(all_scores, league_table, num_sims,
+#                                        "Liverpool", "Brighton", 2, "<")
 permutated_finish <- permutate.a.result(all_scores, league_table, num_sims,
-                                        "Luton", "Nott'm Forest", 17, ">")
+                                        "Man City", "Arsenal", 2, "<")
 # permutated_finish <- permutate.a.result(all_scores, league_table, num_sims,
 #                                        "Crystal Palace", "Luton", 17, ">")
 
@@ -84,7 +86,15 @@ plot.points.vs.rank("Tottenham", all_sims, num_sims)
 plot.points.vs.rank("West Ham", all_sims, num_sims)
 
 # # each team's probabilities per position
-table(all_sims$Team, all_sims$Rank)/num_sims
+# table(all_sims$Team, all_sims$Rank)/num_sims
+dt_all_sims <- as.data.table(all_sims)
+dt_rank_table <- dcast(dt_all_sims, Team ~ Rank, value.var = "Rank", fun.aggregate = function(x) length(x) / num_sims)
+setorder(dt_rank_table, -'17') # substitute where you want to sort
+setorder(dt_rank_table, -'14') # substitute where you want to sort
+setorder(dt_rank_table, -'7') # substitute where you want to sort
+setorder(dt_rank_table, -'4') # substitute where you want to sort
+setorder(dt_rank_table, -'1') # substitute where you want to sort
+dt_rank_table
 
 ## to plot relegation over time; need to build different function
 ## ggplot(rel, aes(x = Gameweek, y = Percent, color = Team)) + 

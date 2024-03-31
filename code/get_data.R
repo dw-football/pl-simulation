@@ -20,19 +20,20 @@ pl <- select(pl_input, HomeTeam, AwayTeam, FTR, FTHG, FTAG)
 
 ## Add games played but not yet in .csv file
 # ## Can also add games we want to "force" to certain outcomes as scenarios
-pl <- add.game(pl, "Burnley", 2, "Brentford", 0)
-pl <- add.game(pl, "Luton", 1, "Nott'm Forest", 1)
-pl <- add.game(pl, "Fulham", 3, "Tottenham", 0)
 
-pl <- add.game(pl, "West Ham", 1, "Aston Villa", 1)
+pl <- add.game(pl, "Newcastle", 4, "West Ham", 3)
+pl <- add.game(pl, "Bournemouth", 2, "Everton", 1)
+pl <- add.game(pl, "Sheffield United", 3, "Fulham", 3)
+pl <- add.game(pl, "Chelsea", 2, "Burnley", 2)
+pl <- add.game(pl, "Nott'm Forest", 1, "Crystal Palace", 1)
+pl <- add.game(pl, "Tottenham", 2, "Luton", 1)
+pl <- add.game(pl, "Aston Villa", 2, "Wolves", 0)
 
+pl <- add.game(pl, "Brentford", 1, "Man United", 1)
 
-# pl <- add.game(pl, "Man United", 2, "Everton", 0)
-# pl <- add.game(pl, "Bournemouth", 2, "Sheffield United", 2)
-# pl <- add.game(pl, "Crystal Palace", 1, "Luton", 1)
-# pl <- add.game(pl, "Wolves", 2, "Fulham", 1)
-# pl <- add.game(pl, "Liverpool", 1, "Man City", 1)
-# pl <- add.game(pl, "Chelsea", 3, "Newcastle", 2)
+pl <- add.game(pl, "Liverpool", 2, "Brighton", 1)
+
+pl <- add.game(pl, "Man City", 0, "Arsenal", 0)
 
 
 league_table <- create.league.table(pl)
@@ -40,6 +41,9 @@ league_table <- create.league.table(pl)
 # Remove 6 points for Everton!
 league_table$Points[league_table$Team == "Everton"] <- 
   league_table$Points[league_table$Team == "Everton"] - 6
+# Remove 4 points for Forest!
+league_table$Points[league_table$Team == "Nott'm Forest"] <- 
+  league_table$Points[league_table$Team == "Nott'm Forest"] - 4
 
 sorted_league_table <- create.sorted.league.table(league_table)
 
