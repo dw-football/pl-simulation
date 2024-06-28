@@ -20,27 +20,36 @@ pl <- select(pl_input, HomeTeam, AwayTeam, FTR, FTHG, FTAG)
 
 ## Add games played but not yet in .csv file
 # ## Can also add games we want to "force" to certain outcomes as scenarios
+# 
 
-pl <- add.game(pl, "Newcastle", 4, "West Ham", 3)
-pl <- add.game(pl, "Bournemouth", 2, "Everton", 1)
-pl <- add.game(pl, "Sheffield United", 3, "Fulham", 3)
-pl <- add.game(pl, "Chelsea", 2, "Burnley", 2)
-pl <- add.game(pl, "Nott'm Forest", 1, "Crystal Palace", 1)
-pl <- add.game(pl, "Tottenham", 2, "Luton", 1)
-pl <- add.game(pl, "Aston Villa", 2, "Wolves", 0)
+## SATURDAY
+pl <- add.game(pl, "Fulham", 0, "Man City", 4)
+pl <- add.game(pl, "Bournemouth", 1, "Brentford", 2)	
+pl <- add.game(pl, "Everton", 1, "Sheffield United", 0)
+pl <- add.game(pl, "Newcastle", 1, "Brighton", 1)
+pl <- add.game(pl, "Tottenham", 2, "Burnley", 1)
+pl <- add.game(pl, "West Ham", 3, "Luton", 1)
+pl <- add.game(pl, "Wolves", 1, "Crystal Palace", 3)
+pl <- add.game(pl, "Nott'm Forest", 2, "Chelsea", 3)
 
-pl <- add.game(pl, "Brentford", 1, "Man United", 1)
+## SUNDAY
+pl <- add.game(pl, "Man United", 0, "Arsenal", 1)
 
-pl <- add.game(pl, "Liverpool", 2, "Brighton", 1)
+## MONDAY
+pl <- add.game(pl, "Aston Villa", 3, "Liverpool", 3)
 
-pl <- add.game(pl, "Man City", 0, "Arsenal", 0)
+## TUESDAY
+pl <- add.game(pl, "Tottenham", 0, "Man City", 2)
 
+## WEDNESDAY
+pl <- add.game(pl, "Brighton", 1, "Chelsea", 2)
+pl <- add.game(pl, "Man United", 3, "Newcastle", 2)
 
 league_table <- create.league.table(pl)
 
-# Remove 6 points for Everton!
+# Remove 8 points for Everton!
 league_table$Points[league_table$Team == "Everton"] <- 
-  league_table$Points[league_table$Team == "Everton"] - 6
+  league_table$Points[league_table$Team == "Everton"] - 8
 # Remove 4 points for Forest!
 league_table$Points[league_table$Team == "Nott'm Forest"] <- 
   league_table$Points[league_table$Team == "Nott'm Forest"] - 4
@@ -51,7 +60,7 @@ sorted_league_table <- create.sorted.league.table(league_table)
 season_matrix <- ggplot(pl, aes(x=AwayTeam, y=HomeTeam, color=FTR)) +
   geom_point(size=2) +
   theme(axis.text.x = element_text(angle=90, hjust=1, vjust=0)) +
-  ggtitle("Premier League 2022-23 Results So Far") +
+  ggtitle("Premier League 2023-24 Results So Far") +
   scale_color_manual(name = "Result", 
                      labels = c("Away win", "Draw", "Home win"),
                      values = c("red", "black","green")) +

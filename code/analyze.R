@@ -24,15 +24,21 @@ relegation
 # permutated_finish <- permutate.a.result(all_scores, league_table, num_sims,
 #                                        "Chelsea",
 #                                       "Nott'm Forest", 17, ">")
-#permutated_finish <- permutate.a.result(all_scores, league_table, num_sims,
-#                                        "Aston Villa", "Tottenham", 5, "<")
+# permutated_finish <- permutate.a.result(all_scores, league_table, num_sims,
+#                                         "Wolves", "West Ham", 9, "<")
 #permutated_finish <- permutate.a.result(all_scores, league_table, num_sims,
 #                                        "Liverpool", "Brighton", 2, "<")
-permutated_finish <- permutate.a.result(all_scores, league_table, num_sims,
-                                        "Man City", "Arsenal", 2, "<")
 # permutated_finish <- permutate.a.result(all_scores, league_table, num_sims,
-#                                        "Crystal Palace", "Luton", 17, ">")
+#                                         "Man United", "Liverpool", 2, "<")
+permutated_finish <- permutate.a.result(all_scores, league_table, num_sims,
+                                         "Tottenham", "Man City", 2, "<")
+permutated_finish_4th <- permutate.a.result(all_scores, league_table, num_sims,
+                                        "Tottenham", "Man City", 5, "<")
 
+placements <- c(6, 7, 8)
+permutated_finish_chat <- permutate.a.result.multiple.placements(all_scores, league_table, 
+                                                  num_sims,"Chelsea", "Bournemouth", 
+                                                  placements, "<")
 
 # run this if want to see how 2 teams did against each other
 check.individual.game(all_scores, num_sims, "Liverpool", "Man City")

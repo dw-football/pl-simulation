@@ -215,7 +215,22 @@ simulate.one.game <- function(numSims, ExpHG, ExpAG) {
 }
 
 # Function to simulate matches for each pair and store results in the original data table
-simulate.many.games <- function(data, numSims) {
+simulate.many.games <- function(df, numSims) {
+  results <- lapply(1:nrow(df), function(i) {
+    result <- simulate.one.game(numSims, ExpHG = df$EHG[i], ExpAG = df$EAG[i])
+    return (result)
+  })
+  
+  # Add results back to the original data table
+  results_df <- do.call(rbind, results)
+  data[, c("HomeWins", "AwayWins", "Draws", "AvgHomeGoals", "AvgAwayGoals") := 
+         as.data.table(results_df)]
+  
+  return(data)
+}
+
+# Function to simulate matches for each pair and store results in the original data table
+simulate.many.games.table <- function(data, numSims) {
   results <- lapply(1:nrow(data), function(i) {
     result <- simulate.one.game(numSims, ExpHG = data[i, EHG], ExpAG = data[i, EAG])
     return (result)
@@ -234,7 +249,7 @@ simulate.grid.of.poissons <- function(numSims)
   initial_data <- expand.grid(EHG = seq(0.25, 4, by = 0.25), EAG = seq(0.25, 4, by = 0.25))
   results_table <- data.table(initial_data)
   # Call the function to simulate matches for each pair and store results in the original data table
-  final_results_table <- simulate.many.games(results_table, numSims)
+  final_results_table <- simulate.many.games.table(results_table, numSims)
   return(final_results_table)
 }
 
@@ -291,6 +306,20 @@ check.individual.game <- function(scores, numSims, Home, Away) {
   print(paste0("Draws:  ", draws, " (", draws/numSims*100, "%)"))
   print(paste0("HG/game = ", homeGoals/numSims, " AG/game = ",awayGoals/numSims))
 }
+
+check.comparative.goaldiff <- function(allSims, numSims, T1, T2) {
+  longTeams <- dplyr::filter(allSims, Team == T1 | Team == T2)
+  wideTeams <- reshape2::dcast(longTeams, SimNo ~ Team, value.var = "GD")
+  T1ahead <- sum(wideTeams[ , 2] < wideTeams[ , 3])
+  T2ahead <- sum(wideTeams[ , 3] < wideTeams[ , 2])
+  if (T1 > T2) {
+    temp <- T2ahead
+    T2ahead <- T1ahead
+    T1ahead <- temp
+  }
+  print(paste0(T1, " finishes ahead: ", T1ahead / numSims * 100, "%"))
+  print(paste0(T2, " finishes ahead: ", T2ahead / numSims * 100, "%"))
+}      
 
 check.comparative.rankings <- function(allSims, numSims, T1, T2) {
   longTeams <- dplyr::filter(allSims, Team == T1 | Team == T2)
@@ -416,6 +445,31 @@ create.finishing.odds.table <- function(all_sims, placement, operator) {
     mutate(Team = as.character(Team))
 }
 
+create.finishing.odds.table.chat <- function(all_sims, placement, operator) {
+
+  # Convert to data.table
+  dt <- as.data.table(all_sims)
+  
+  # Get the number of simulations
+  num_sims <- nrow(dt) / length(unique(dt$Team))
+  
+  # Filter based on the operator
+  if (operator == "==") {
+    rt <- dt[Rank == placement]
+  } else if (operator == "<") {
+    rt <- dt[Rank < placement]
+  } else {
+    rt <- dt[Rank > placement]
+  }
+  
+  # Group and summarize
+  rt <- rt[, .(Count = .N, Percent = .N / num_sims * 100), by = Team]
+  
+  # Order and convert Team to character
+  rt <- rt[order(-Count), .(Team = as.character(Team), Count, Percent)]
+  
+  return(rt)
+}
 
 #######################
 # Plot Relegation Odds  ---------
@@ -556,6 +610,62 @@ export_formattable <- function(f, file, width = "100%", height = NULL,
           delay = delay)
 }
 
+######################
+#
+# Allows you to permutate one of the remaining games (Home v Away) and see how
+# various placements with one operator, e.g (c(6, 7,8)) & operator '<')
+######################
+permutate.a.result.multiple.placements <- function(all_scores, league_table, num_sims, Home, 
+                                    Away, placements, operator) {
+  # Create a list to store the results for each placement/operator combination
+  results <- vector("list", length(placements))
+  
+  # Mutate the scores for home win, away win, and draw scenarios
+  home_wins <- mutate(all_scores, 
+                      HG = replace(HG, HomeTeam == Home & AwayTeam == Away, 2),
+                      AG = replace(AG, HomeTeam == Home & AwayTeam == Away, 1))
+  away_wins <- mutate(all_scores, 
+                      HG = replace(HG, HomeTeam == Home & AwayTeam == Away, 1),
+                      AG = replace(AG, HomeTeam == Home & AwayTeam == Away, 2))
+  draws <- mutate(all_scores, 
+                  HG = replace(HG, HomeTeam == Home & AwayTeam == Away, 1),
+                  AG = replace(AG, HomeTeam == Home & AwayTeam == Away, 1))
+  
+  # Calculate the simulations for each scenario
+  home_win_sims <- calc.points.and.rank(home_wins, league_table, num_sims)
+  away_win_sims <- calc.points.and.rank(away_wins, league_table, num_sims)
+  draw_sims <- calc.points.and.rank(draws, league_table, num_sims)
+  
+  # Iterate over the placements and operators
+  idx <- 1
+  for (placement in placements) {
+#    for (operator in operators) {
+      H <- create.finishing.odds.table.chat(home_win_sims, placement, operator)
+      A <- create.finishing.odds.table.chat(away_win_sims, placement, operator)
+      D <- create.finishing.odds.table.chat(draw_sims, placement, operator)
+      
+      # Stitch together the H, A, and D data frames
+      result <- bind_rows(
+        mutate(H, Outcome = "Home Win"),
+        mutate(A, Outcome = "Away Win"),
+        mutate(D, Outcome = "Draw")
+      ) %>%
+        pivot_wider(names_from = Outcome, values_from = c(Percent, Count)) %>%
+        rename_with(~ c(paste0(Home, " W %"), paste0(Away, " W %"), "Draw %",
+                        paste0(Home, " W Count"), paste0(Away, " W Count"), "Draw Count"), 
+                    .cols = contains("Percent") | contains("Count")) %>%
+        arrange(desc(rowSums(select(., contains("Count")))))
+      
+      # Store the result in the list
+      results[[idx]] <- result
+      idx <- idx + 1
+#    }
+  }
+  
+  # Return the list of results
+  return(results)
+}
+
 
 permutate.a.result <- function(all_scores, league_table, num_sims, Home, Away, 
                                placement, operator) {
@@ -608,11 +718,13 @@ create.538.table <- function(all_sims, sorted_league_table) {
   top5 <- create.finishing.odds.table(all_sims, 6, "<")
   top6 <- create.finishing.odds.table(all_sims, 7, "<")
   top7 <- create.finishing.odds.table(all_sims, 8, "<")
+  top8 <- create.finishing.odds.table(all_sims, 9, "<")
   relegation <- create.finishing.odds.table(all_sims, 17, ">")
   slt <- left_join(slt, select(top4, c(Team, Top4 = Percent)))
   slt <- left_join(slt, select(top5, c(Team, Top5 = Percent)))
   slt <- left_join(slt, select(top6, c(Team, Top6 = Percent)))
   slt <- left_join(slt, select(top7, c(Team, Top7 = Percent)))
+  slt <- left_join(slt, select(top8, c(Team, Top8 = Percent)))
   slt <- left_join(slt, select(relegation, c(Team, Rel = Percent)))
   
   fnc <- function(var, decimal_places) {
@@ -621,10 +733,10 @@ create.538.table <- function(all_sims, sorted_league_table) {
     var
   }
   
-  vars <- c('Win', 'Top4', 'Top5', 'Top6', 'Top7', 'Rel')
+  vars <- c('Win', 'Top4', 'Top5', 'Top6', 'Top7', 'Top8', 'Rel')
   slt[, vars] <- mapply(fnc, slt[, vars], 1)
   slt <- slt %>% mutate(Rank = 1:n()) %>%
-    select(Rank, Team, Played, Points, GD, Win, Top4, Top5, Top6, Top7, Rel)
+    select(Rank, Team, Played, Points, GD, Win, Top4, Top5, Top6, Top7, Top8, Rel)
 }
 
 print.formatted.538 <- function(t)
@@ -641,7 +753,8 @@ print.formatted.538 <- function(t)
                              x ~ sprintf(x))
   
   f1 <- formattable(t, 
-                    align = c("l", "c", "c", "c", "c", "c", "c", "c", "c", "c"),
+                    align = c("l", "c", "c", "c", "c", "c", "c", "c", "c", "c",
+                              "c"),
                     formatters = list(
                       Rank = formatter("span", x ~ sprintf("%.0f", x)),
                       Win = pos_formatter,
@@ -649,6 +762,7 @@ print.formatted.538 <- function(t)
                       Top5 = pos_formatter,
                       Top6 = pos_formatter,
                       Top7 = pos_formatter,
+                      Top8 = pos_formatter,
                       Rel = neg_formatter
                     ))
   
@@ -671,14 +785,15 @@ print.538.flextable <- function(t)
     color(~ as.numeric(Top5) >= 50, ~ Top5, color = "#4CBB17") %>%
     color(~ as.numeric(Top6) >= 50, ~ Top6, color = "#4CBB17") %>%
     color(~ as.numeric(Top7) >= 50, ~ Top7, color = "#4CBB17") %>%    
+    color(~ as.numeric(Top8) >= 50, ~ Top8, color = "#4CBB17") %>%    
     align(j = 1, align = "right") %>%
     align(j = 2, align = "left") %>%
-    align(j = 3:11, align = "right") %>%
+    align(j = 3:12, align = "right") %>%
     align(part = "header", align = "center") %>%   # Align header row text to center
     width(j = 2, width = 1.3, unit = "in") %>%
     width(j = 3:5, width = 0.5, unit = "in") %>%
     vline(part = "all", j = 5, border = border_style) %>%  # at column 5
-    vline(part = "all", j = 10, border = border_style)     # at column 10
+    vline(part = "all", j = 11, border = border_style)     # at column 11
   
   save_as_image(f1, path = "table.png")
   
@@ -737,6 +852,67 @@ print.maccabi.report = function(sims, title = "Maccabi Report")
   print (cross)
   print(prop.table(cross, margin = 1))
 }
+
+generate.blank.league.table <- function(num_teams = 24, num_teams_per_group = 4) {
+  num_groups <- num_teams / num_teams_per_group
+  
+  ## Create a list of team names
+  team_names <- vector()
+  for (group in LETTERS[1:num_groups]) {
+    for (team in 1:num_teams_per_group) {
+      team_names <- c(team_names, paste0(group, team))
+    }
+  }
+  
+  ## Create the league table
+  league_table <- data.frame(
+    Team = team_names,
+    Points = 0,
+    TGS = 0,
+    TGC = 0
+  )
+  
+  return(league_table)
+}
+
+
+
+# create schedule of all the group stage games
+# make up team names
+generate.schedule <- function(num_teams = 24, num_teams_per_group = 4)
+{
+  num_groups = num_teams / num_teams_per_group
+  
+    ## Create a list of team names
+  team_names <- vector()
+  for (group in LETTERS[1:num_groups]) {
+    for (team in 1:num_teams_per_group) {
+      team_names <- c(team_names, paste0(group, team))
+    }
+  }
+  ## Generate group stage matches
+  group_matches <- data.frame()
+  for (group in LETTERS[1:num_groups]) {
+    group_teams <- team_names[grepl(group, team_names)]
+    group_matches <- rbind(group_matches, t(combn(group_teams, 2)))
+  }
+  colnames(group_matches) <- c("HomeTeam", "AwayTeam")
+  ## Append columns with 1 and 1.5
+  group_matches <- cbind(group_matches, "ExpHG" = 1, "ExpAG" = 1)
+  
+  return(group_matches)
+}
+
+simulate.euros <- function (iSim = 100)
+{
+  league_table <- generate.blank.league.table(24, 4)
+  schedule <- generate.schedule(24, 4)
+  scores <- simulate.many.seasons(schedule, iSim, FALSE)
+  
+  # run the simulation on this schedule
+}
+
+
 
 
 run.maccabi <- function(iSim = 100)
