@@ -66,49 +66,121 @@ create.sorted.league.table <- function(leagueTable) {
 }
 
 
-determine.remaining.matches <- function(league, leagueTable) {
-  # create list of Matches already played in complMatch
-  complMatch = paste(league$HomeTeam, league$AwayTeam, sep = " - ")
-  #  browser()
+just.create.unplayed.matches <- function (league_table, completed_matches = "")
+{
   # and alphabetic list of teams in the league
   # teams <- unique(c(league$HomeTeam,league$AwayTeam)) %>% sort
-  teams <- sort(leagueTable$Team)
-  numTeams <- length(teams)
-  numMatches <- numTeams * (numTeams - 1)
-  print(paste("numteams = ", numTeams, "numMatches = ", numMatches))
-  
+  teams <- sort(league_table$Team)
+  num_teams <- length(teams)
+  num_matches <- num_teams * (num_teams - 1)
+  print(paste("num_teams = ", num_teams, "num_matches = ", num_matches))
+
   # create list of remaining games
   # this one creates a kind of 'expected goals' by game for use in simulation
   # In past simulations (done in Excel), I used betting odds instead of EG
   # Is there a way to look those up? ****
-  remMatches <- expand.grid(HomeTeam = teams, AwayTeam = teams, 
-                            stringsAsFactors = FALSE) %>%
+  rem_matches <- expand.grid(HomeTeam = teams, AwayTeam = teams, 
+                             stringsAsFactors = FALSE) %>%
     filter(HomeTeam != AwayTeam) %>%
-    mutate(Match = paste(HomeTeam, AwayTeam, sep = " - ")) %>%
-    filter(!(Match %in% complMatch)) %>%
+    mutate(Match = paste(HomeTeam, AwayTeam, sep = " - "))
+  
+  if (length(completed_matches) > 0 ) {
+    rem_matches <- rem_matches %>%
+      filter(!(Match %in% completed_matches))
+  }
+  
+  rem_matches <- rem_matches %>%
     select(-Match) %>%
-    mutate(HG = mean(league$FTHG),
-           AG = mean(league$FTAG),
-           TG = (mean(league$FTHG) + mean(league$FTAG)) / 2) %>%
-    inner_join(subset(leagueTable, select = -c(Wins, Draws, Losses, Points, GD, TGS, TGC, AGS, AGC)), 
+    ungroup()
+  
+  num_rem_matches = nrow(rem_matches)
+  print(paste("numRemMatches =", num_rem_matches))
+  rem_matches %>% 
+    mutate(MatchNo = row_number() + num_matches - num_rem_matches) %>%
+    select(MatchNo, everything())
+}
+
+add.expected.goals.from.games.played <- function(unplayed_matches,
+                                                 league_table,
+                                                 mean_HG,
+                                                 mean_AG)
+{
+  unplayed_matches <- unplayed_matches %>%
+    mutate(HG = mean_HG,
+           AG = mean_AG,
+           TG = (mean_HG + mean_AG) / 2) %>%
+    inner_join(subset(league_table, select = -c(Wins, Draws, Losses, Points, GD,
+                                                TGS, TGC, AGS, AGC)), 
                by = c("HomeTeam" = "Team")) %>%
-    inner_join(subset(leagueTable, select = -c(Wins, Draws, Losses, Points, GD, TGS, TGC, HGS, HGC)), 
+    inner_join(subset(league_table, select = -c(Wins, Draws, Losses, Points, GD, 
+                                                TGS, TGC, HGS, HGC)), 
                by = c("AwayTeam" = "Team")) %>%
-    setNames(c("HomeTeam", "AwayTeam", "HG", "AG", "TG",
+    setNames(c("MatchNo", "HomeTeam", "AwayTeam", "HG", "AG", "TG",
                "GS.by.H", "GC.by.H", "GS.by.A", "GC.by.A")) %>%
     # old calc
     #    mutate(ExpHG = (GS.by.H / TG) * (GC.by.A / TG) * (HG / TG) * TG,
     #           ExpAG = (GS.by.A / TG) * (GC.by.H / TG) * (AG / TG) * TG) %>%
     mutate(ExpHG = (GS.by.H / HG) * GC.by.A,
-           ExpAG = (GS.by.A / AG) * GC.by.H) %>%
-    ungroup()
-  
-  numRemMatches = nrow(remMatches)
-  print(paste("numRemMatches =", numRemMatches))
-  remMatches %>% mutate(MatchNo = row_number() + numMatches - numRemMatches) %>%
-    select(MatchNo, everything())
+           ExpAG = (GS.by.A / AG) * GC.by.H)
+#   %>% ungroup()
 }
 
+# Shouldn't need any more
+# create.unplayed.matches <- function(league_table, completed_matches,
+#                                     mean_HG, mean_AG) {
+#   
+#   # and alphabetic list of teams in the league
+#   # teams <- unique(c(league$HomeTeam,league$AwayTeam)) %>% sort
+#   teams <- sort(league_table$Team)
+#   num_teams <- length(teams)
+#   num_matches <- num_teams * (num_teams - 1)
+#   print(paste("num_teams = ", num_teams, "num_matches = ", num_matches))
+#   
+#   # create list of remaining games
+#   # this one creates a kind of 'expected goals' by game for use in simulation
+#   # In past simulations (done in Excel), I used betting odds instead of EG
+#   # Is there a way to look those up? ****
+#   rem_matches <- expand.grid(HomeTeam = teams, AwayTeam = teams, 
+#                             stringsAsFactors = FALSE) %>%
+#     filter(HomeTeam != AwayTeam) %>%
+#     mutate(Match = paste(HomeTeam, AwayTeam, sep = " - ")) %>%
+#     filter(!(Match %in% completed_matches)) %>%
+#     select(-Match) %>%
+#     mutate(HG = mean_HG,
+#            AG = mean_AG,
+#            TG = (mean_HG + mean_AG) / 2) %>%
+#     inner_join(subset(league_table, select = -c(Wins, Draws, Losses, Points, GD,
+#                                                 TGS, TGC, AGS, AGC)), 
+#                by = c("HomeTeam" = "Team")) %>%
+#     inner_join(subset(league_table, select = -c(Wins, Draws, Losses, Points, GD, 
+#                                                 TGS, TGC, HGS, HGC)), 
+#                by = c("AwayTeam" = "Team")) %>%
+#     setNames(c("HomeTeam", "AwayTeam", "HG", "AG", "TG",
+#                "GS.by.H", "GC.by.H", "GS.by.A", "GC.by.A")) %>%
+#     # old calc
+#     #    mutate(ExpHG = (GS.by.H / TG) * (GC.by.A / TG) * (HG / TG) * TG,
+#     #           ExpAG = (GS.by.A / TG) * (GC.by.H / TG) * (AG / TG) * TG) %>%
+#     mutate(ExpHG = (GS.by.H / HG) * GC.by.A,
+#            ExpAG = (GS.by.A / AG) * GC.by.H) %>%
+#     ungroup()
+#   
+#   num_rem_matches = nrow(rem_matches)
+#   print(paste("numRemMatches =", num_rem_matches))
+#   rem_matches %>% 
+#     mutate(MatchNo = row_number() + num_matches - num_rem_matches) %>%
+#     select(MatchNo, everything())
+# }
+
+determine.remaining.matches <- function(matches_played, league_table) {
+  # create list of Matches already played in complMatch
+  completed_matches = paste(matches_played$HomeTeam, matches_played$AwayTeam, 
+                            sep = " - ")
+  unplayed_matches <- just.create.unplayed.matches(league_table, completed_matches)
+  add.expected.goals.from.games.played(unplayed_matches, league_table,
+                                       mean(matches_played$FTHG), 
+                                       mean(matches_played$FTAG))
+}
+ 
 # Code I originally wrote, but was very slow
 # summarize.one.season.results <- function(leagueTable, scores) {
 #   soFar <- leagueTable %>% select(Team, Points, TGS, TGC)

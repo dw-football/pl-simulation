@@ -23,36 +23,36 @@ pl <- select(pl_input, HomeTeam, AwayTeam, FTR, FTHG, FTAG)
 # 
 
 ## SATURDAY
-pl <- add.game(pl, "Fulham", 0, "Man City", 4)
-pl <- add.game(pl, "Bournemouth", 1, "Brentford", 2)	
-pl <- add.game(pl, "Everton", 1, "Sheffield United", 0)
-pl <- add.game(pl, "Newcastle", 1, "Brighton", 1)
-pl <- add.game(pl, "Tottenham", 2, "Burnley", 1)
-pl <- add.game(pl, "West Ham", 3, "Luton", 1)
-pl <- add.game(pl, "Wolves", 1, "Crystal Palace", 3)
-pl <- add.game(pl, "Nott'm Forest", 2, "Chelsea", 3)
+# pl <- add.game(pl, "Fulham", 0, "Man City", 4)
+# pl <- add.game(pl, "Bournemouth", 1, "Brentford", 2)	
+# pl <- add.game(pl, "Everton", 1, "Sheffield United", 0)
+# pl <- add.game(pl, "Newcastle", 1, "Brighton", 1)
+# pl <- add.game(pl, "Tottenham", 2, "Burnley", 1)
+# pl <- add.game(pl, "West Ham", 3, "Luton", 1)
+# pl <- add.game(pl, "Wolves", 1, "Crystal Palace", 3)
+# pl <- add.game(pl, "Nott'm Forest", 2, "Chelsea", 3)
 
 ## SUNDAY
-pl <- add.game(pl, "Man United", 0, "Arsenal", 1)
-
+# pl <- add.game(pl, "Man United", 0, "Arsenal", 1)
+# 
 ## MONDAY
-pl <- add.game(pl, "Aston Villa", 3, "Liverpool", 3)
-
+# pl <- add.game(pl, "Aston Villa", 3, "Liverpool", 3)
+# 
 ## TUESDAY
-pl <- add.game(pl, "Tottenham", 0, "Man City", 2)
-
+# pl <- add.game(pl, "Tottenham", 0, "Man City", 2)
+# 
 ## WEDNESDAY
-pl <- add.game(pl, "Brighton", 1, "Chelsea", 2)
-pl <- add.game(pl, "Man United", 3, "Newcastle", 2)
+# pl <- add.game(pl, "Brighton", 1, "Chelsea", 2)
+# pl <- add.game(pl, "Man United", 3, "Newcastle", 2)
 
 league_table <- create.league.table(pl)
 
 # Remove 8 points for Everton!
-league_table$Points[league_table$Team == "Everton"] <- 
-  league_table$Points[league_table$Team == "Everton"] - 8
+#league_table$Points[league_table$Team == "Everton"] <- 
+#  league_table$Points[league_table$Team == "Everton"] - 8
 # Remove 4 points for Forest!
-league_table$Points[league_table$Team == "Nott'm Forest"] <- 
-  league_table$Points[league_table$Team == "Nott'm Forest"] - 4
+#league_table$Points[league_table$Team == "Nott'm Forest"] <- 
+#  league_table$Points[league_table$Team == "Nott'm Forest"] - 4
 
 sorted_league_table <- create.sorted.league.table(league_table)
 
