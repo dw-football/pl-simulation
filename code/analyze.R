@@ -31,7 +31,7 @@ relegation
 # permutated_finish <- permutate.a.result(all_scores, league_table, num_sims,
 #                                         "Man United", "Liverpool", 2, "<")
 permutated_finish <- permutate.a.result(all_scores, league_table, num_sims,
-                                         "Tottenham", "Man City", 2, "<")
+                                         "West Ham", "Bournemouth", 17, ">")
 permutated_finish_4th <- permutate.a.result(all_scores, league_table, num_sims,
                                         "Tottenham", "Man City", 5, "<")
 
@@ -56,9 +56,9 @@ p
 # # pB <- plot.relegation.odds("Bournemouth", all_sims, num_sims)
 # 
 
-teams_to_plot <- c("Luton", "Nott'm Forest", "Everton")
+# teams_to_plot <- c("Luton", "Nott'm Forest", "Everton")
 # , "Nott'm Forest", "Crystal Palace", "Brentford")
-# teams_to_plot <- c("West Ham", "Crystal Palace", "Bournemouth", "Wolves")
+teams_to_plot <- c("West Ham", "Nott'm Forest", "Tottenham")
 plots <- lapply(teams_to_plot, plot.relegation.odds, all_sims, num_sims)
 num_teams <- length(plots)
 nc <- ceiling(sqrt(num_teams))
@@ -66,7 +66,7 @@ grid.arrange(grobs=plots, ncol=nc)
 gr <- arrangeGrob(grobs = plots, ncol=nc)
 ggsave("relegation.png", gr, width=8, height=6, units="in")
 
-cl_teams <- c("Newcastle", "West Ham")
+cl_teams <- c("Man City", "West Ham")
 top4_odds <- lapply(cl_teams, check.placement.odds, all_sims, num_sims, 4)
 europa_teams <- c("West Ham", "Tottenham", "Everton", "Arsenal")
 top6_odds <- lapply(europa_teams, check.placement.odds, all_sims, num_sims, 6)
@@ -74,7 +74,7 @@ top7_odds <- lapply(europa_teams, check.placement.odds, all_sims, num_sims, 7)
 
 # teams_to_plot <- c("Newcastle", "Man United", "Tottenham", "Aston Villa",
 #                   "Liverpool", "Brighton")
-teams_to_plot <- c("Liverpool", "Man City", "Arsenal")
+teams_to_plot <- c("Man City", "Chelsea", "Man United", "Liverpool")
 plots <- lapply(teams_to_plot, plot.points.vs.rank, all_sims, num_sims)
 num_teams <- length(plots)
 nc <- ceiling(sqrt(num_teams))

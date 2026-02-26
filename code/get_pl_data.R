@@ -23,8 +23,8 @@ pl <- select(pl_input, HomeTeam, AwayTeam, FTR, FTHG, FTAG)
 # 
 
 ## SATURDAY
-# pl <- add.game(pl, "Fulham", 0, "Man City", 4)
-# pl <- add.game(pl, "Bournemouth", 1, "Brentford", 2)	
+# pl <- add.game(pl, "West Ham", 0, "Bournemouth", 0)
+# pl <- add.game(pl, "Man City", 2, "Newcastle", 1)	
 # pl <- add.game(pl, "Everton", 1, "Sheffield United", 0)
 # pl <- add.game(pl, "Newcastle", 1, "Brighton", 1)
 # pl <- add.game(pl, "Tottenham", 2, "Burnley", 1)

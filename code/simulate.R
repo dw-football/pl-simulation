@@ -14,7 +14,7 @@ num_sims <- 5000
 ## to every other.  It's a good model check and shows (by comparison)
 ## the impact of prior results on the model
 # all_scores <- simulate.many.seasons(rem_matches, num_sims, neutralize=FALSE)
-all_scores <- simulate.many.seasons(rem_matches, num_sims, neutralize=TRUE)
+all_scores <- simulate.many.seasons(rem_matches, num_sims, neutralize=FALSE)
 all_sims <- calc.points.and.rank(all_scores, league_table, num_sims)
 
 # Write to disk the scores and sim results for later re-load

@@ -331,37 +331,23 @@ simulate.many.seasons <- function(remMatches,
                                   numSims = 100,
                                   neutralize = FALSE)
 {
-  n <- nrow(remMatches) # do we need here?
-  
-  #  pb <- winProgressBar(title = "Running Simulations", 
-  #                       label = "Simulating ... 0% done", 
-  #                       min = 0, 
-  #                       max = numSims, 
-  #                       initial = 0)
-  
-  allScores <- data.frame(SimNo = rep(1:numSims, each = n),
-                          HomeTeam = rep(remMatches$HomeTeam, numSims),
-                          HG = rep(NA, n * numSims),
-                          AwayTeam = rep(remMatches$AwayTeam, numSims),
-                          AG = rep(NA, n * numSims))
-  
-  #   OLD code w/ for loop, replaced by ChatGPT recommended lapply 2023-05-08
-  #   for (i in 1:numSims){
-  #     scores <- simulate.one.season(remMatches, neutralize)  
-  #     allScores[(n * (i-1) + 1):(n * i), c("HG", "AG")] <- select(scores, HG, AG)
-  #     
-  #     info <- sprintf("Simulating ... %d%% done", round((i/numSims)*100))
-  #     setWinProgressBar(pb, i, label = info)  
-  #   }
-  
-  simResults <- lapply(1:numSims, function(i) {
-    scores <- simulate.one.season(remMatches, neutralize)
-    cbind(scores, SimNo = i)
-  })
-  allScores <- do.call(rbind, simResults)
-  
-  #   close(pb)
-  return(allScores)
+  n <- nrow(remMatches)
+
+  if (neutralize) {
+    hg <- rpois(n * numSims, 1)
+    ag <- rpois(n * numSims, 1)
+  } else {
+    hg <- rpois(n * numSims, rep(remMatches$ExpHG, numSims))
+    ag <- rpois(n * numSims, rep(remMatches$ExpAG, numSims))
+  }
+
+  data.table(
+    SimNo    = rep(seq_len(numSims), each = n),
+    HomeTeam = rep(remMatches$HomeTeam, numSims),
+    AwayTeam = rep(remMatches$AwayTeam, numSims),
+    HG = hg,
+    AG = ag
+  )
 }
 
 check.individual.game <- function(scores, numSims, Home, Away) {
@@ -453,24 +439,33 @@ check.comparative.rankings <- function(allSims, numSims, T1, T2) {
 
 
 calc.points.and.rank <- function(allScores, leagueTable, numSims) {
-  teams <- sort(leagueTable$Team)
-  n <- length(teams)
-  
-  simResults <- lapply(1:numSims, function(i) {
-    # simResults <- parLapply(1:numSims, function(i) {
-    res <- summarize.one.season.results(leagueTable, allScores[allScores$SimNo == i,])
-    data.frame(Team = rep(teams, 1),
-               SimNo = rep(i, n),
-               Pts = res$Pts,
-               GD = res$GD,
-               GS = res$GS,
-               GC = res$GC,
-               Rank = res$Rank)
-  })
-  
-  simResults <- do.call(rbind, simResults)
-  
-  return(simResults)
+  dt <- as.data.table(allScores)
+  lt <- as.data.table(leagueTable)
+
+  home <- dt[, .(Pts = 3L * sum(HG > AG) + sum(HG == AG),
+                 GS  = sum(HG), GC = sum(AG)),
+             by = .(SimNo, Team = HomeTeam)]
+
+  away <- dt[, .(Pts = 3L * sum(AG > HG) + sum(HG == AG),
+                 GS  = sum(AG), GC = sum(HG)),
+             by = .(SimNo, Team = AwayTeam)]
+
+  new_pts <- rbindlist(list(home, away))[
+    , .(Pts = sum(Pts), GS = sum(GS), GC = sum(GC)),
+    by = .(SimNo, Team)]
+
+  base <- lt[, .(Team, Pts = Points, GS = TGS, GC = TGC)]
+  base_all <- base[rep(seq_len(nrow(base)), numSims)
+                   ][, SimNo := rep(seq_len(numSims), each = nrow(base))]
+
+  combined <- rbindlist(list(base_all, new_pts), use.names = TRUE)[
+    , .(Pts = sum(Pts), GS = sum(GS), GC = sum(GC)),
+    by = .(SimNo, Team)]
+  combined[, GD := GS - GC]
+
+  setorder(combined, SimNo, -Pts, -GD, -GS)
+  combined[, Rank := seq_len(.N), by = SimNo]
+  combined[order(SimNo, Team)]
 }
 
 # written by chatGPT 2023-05-14 for speed
@@ -985,6 +980,101 @@ simulate.euros <- function (iSim = 100)
 }
 
 
+
+
+############################
+# rank.games.by.importance()
+#
+# For each remaining game, measures how much forcing each outcome (home win,
+# draw, away win) shifts the finishing probabilities for zones of interest.
+#
+# Importance for a game g and zone Z:
+#   sum over teams of [ P(HW)*|p(HW)-p_base| + P(D)*|p(D)-p_base| + P(AW)*|p(AW)-p_base| ]
+# where probabilities are drawn from the simulation itself.
+#
+# Returns a data.table sorted descending by Total importance.
+#
+# Usage:
+#   game_importance <- rank.games.by.importance(all_scores, league_table,
+#                                               num_sims, rem_matches)
+############################
+rank.games.by.importance <- function(all_scores, league_table, num_sims, rem_matches,
+                                     zones = list(
+                                       Title      = list(placement = 1,  op = "=="),
+                                       CL         = list(placement = 5,  op = "<"),
+                                       Relegation = list(placement = 17, op = ">")
+                                     )) {
+
+  dt <- copy(as.data.table(all_scores))
+  all_teams <- sort(league_table$Team)
+
+  # Extract zone percentages as a named vector over all teams (0 if team absent)
+  get_zone_pcts <- function(sims, placement, op) {
+    odds <- create.finishing.odds.table.chat(sims, placement, op)
+    result <- setNames(rep(0.0, length(all_teams)), all_teams)
+    idx <- match(odds$Team, all_teams)
+    valid <- !is.na(idx)
+    result[idx[valid]] <- odds$Percent[valid]
+    result
+  }
+
+  # Baseline finishing probabilities for each zone
+  base_sims <- calc.points.and.rank(dt, league_table, num_sims)
+  base_pcts <- lapply(zones, function(z) get_zone_pcts(base_sims, z$placement, z$op))
+
+  n_games <- nrow(rem_matches)
+  cat(sprintf("Ranking %d remaining games by importance...\n", n_games))
+
+  results <- lapply(seq_len(n_games), function(i) {
+    home <- rem_matches$HomeTeam[i]
+    away <- rem_matches$AwayTeam[i]
+
+    if (i %% 10 == 0) cat(sprintf("  %d of %d\n", i, n_games))
+
+    # Capture original simulated scores for this fixture
+    orig_hg <- dt[HomeTeam == home & AwayTeam == away, HG]
+    orig_ag <- dt[HomeTeam == home & AwayTeam == away, AG]
+
+    # Outcome probabilities from the simulation
+    p_hw <- mean(orig_hg > orig_ag)
+    p_d  <- mean(orig_hg == orig_ag)
+    p_aw <- mean(orig_hg < orig_ag)
+
+    # Force a result, recompute standings, then restore original scores
+    run_scenario <- function(hg, ag) {
+      dt[HomeTeam == home & AwayTeam == away, `:=`(HG = hg, AG = ag)]
+      sims <- calc.points.and.rank(dt, league_table, num_sims)
+      dt[HomeTeam == home & AwayTeam == away, `:=`(HG = orig_hg, AG = orig_ag)]
+      sims
+    }
+
+    hw_sims <- run_scenario(2L, 1L)
+    d_sims  <- run_scenario(1L, 1L)
+    aw_sims <- run_scenario(1L, 2L)
+
+    # Expected absolute change in zone probability, summed across all teams
+    zone_impacts <- sapply(names(zones), function(zname) {
+      z      <- zones[[zname]]
+      p_base <- base_pcts[[zname]]
+      p_hw_v <- get_zone_pcts(hw_sims, z$placement, z$op)
+      p_d_v  <- get_zone_pcts(d_sims,  z$placement, z$op)
+      p_aw_v <- get_zone_pcts(aw_sims, z$placement, z$op)
+      sum(p_hw * abs(p_hw_v - p_base) +
+          p_d  * abs(p_d_v  - p_base) +
+          p_aw * abs(p_aw_v - p_base))
+    })
+
+    as.data.table(c(
+      list(HomeTeam = home, AwayTeam = away),
+      as.list(zone_impacts),
+      list(Total = sum(zone_impacts))
+    ))
+  })
+
+  result_dt <- rbindlist(results)
+  setorder(result_dt, -Total)
+  result_dt
+}
 
 
 run.maccabi <- function(iSim = 100)
