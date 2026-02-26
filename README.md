@@ -95,6 +95,7 @@ The Quarto document loads `sim_data.Rdata` and the CSVs to produce a formatted H
 
 ```
 pl-simulation/
+├── app.R                        # Shiny app (run with shiny::runApp())
 ├── code/
 │   ├── main.R                   # Entry point — sources all phases
 │   ├── library_calls.R          # Package imports
@@ -102,17 +103,30 @@ pl-simulation/
 │   ├── get_pl_data.R            # Data ingestion and league table build
 │   ├── simulate.R               # Runs Monte Carlo simulations
 │   ├── analyze.R                # Post-simulation analysis and charts
-│   ├── elo_calcs.R              # Alternative Elo-based xG method (not in main pipeline)
-│   └── denmark.R                # Danish Superliga variant
+│   ├── league_configs.R         # Shiny app: league metadata, table builders
+│   ├── denmark/
+│   │   ├── denmark.R            # Danish Superliga simulation variant
+│   │   └── elo_calcs.R          # Elo-based xG method used by denmark.R
+│   └── other-projects/
+│       └── womens-world-cup.Rmd # One-off WWC analysis (archived)
 ├── data/
-│   ├── E0.csv                   # Source match results (download from football-data.co.uk)
+│   ├── E0.csv                   # PL match results (football-data.co.uk)
+│   ├── E1.csv                   # Championship match results
+│   ├── I1.csv / I2.csv          # Serie A / Serie B
+│   ├── SP1.csv                  # La Liga
+│   ├── extra_games.csv          # Manual game entries (Shiny app)
+│   ├── point_deductions.csv     # Manual point deductions (Shiny app)
 │   ├── league_table.csv         # Generated: current table with xG stats
 │   ├── sorted_league_table.csv  # Generated: league table sorted by position
 │   ├── rem_matches.csv          # Generated: remaining fixtures with expected goals
-│   └── sim_data.Rdata           # Generated: simulation results
+│   ├── sim_data.Rdata           # Generated: simulation results
+│   ├── denmark/                 # Danish Superliga data
+│   └── maccabi/                 # Maccabi Games data (archived)
 ├── docs/
 │   ├── architecture.md          # Technical architecture and design notes
-│   └── data-dictionary.md       # Column schemas for all data files
+│   ├── data-dictionary.md       # Column schemas for all data files
+│   ├── shiny_todo.md            # Shiny app build checklist
+│   └── shiny_prompts.md         # Shiny app build spec (prompt by prompt)
 ├── output/                      # Historical output images
 ├── Premier_League_Simulation.qmd
 ├── CLAUDE.md                    # Agent instructions (Claude Code)

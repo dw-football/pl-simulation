@@ -52,9 +52,9 @@ Goals are then drawn from `rpois()` with these lambdas. Key functions:
 | `permutate.a.result()` | Shows how a single future match result shifts finishing odds |
 | `add.game()` | Manually adds a result not yet in the CSV |
 
-### Alternative expected goals method (`code/elo_calcs.R`)
+### Alternative expected goals method (`code/denmark/elo_calcs.R`)
 
-A secondary Elo-based approach: converts Elo ratings to win probabilities, then back-solves to xG pairs via `find_xg_values()`. Not integrated into the main pipeline but available for ad-hoc use.
+A secondary Elo-based approach: converts Elo ratings to win probabilities, then back-solves to xG pairs via `find_xg_values()`. Used by `code/denmark/denmark.R` for the Danish Superliga simulation. Not integrated into the main PL pipeline. Data lives in `data/denmark/`.
 
 ### Output
 
