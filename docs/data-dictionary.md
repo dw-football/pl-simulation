@@ -142,6 +142,39 @@ A `data.table` with one row per team per simulation. Size: `numTeams × numSims`
 
 ---
 
+## `data/extra_games.csv` — Manually added match results (Shiny app)
+
+Created at Shiny app startup if it doesn't exist. Stores results for games played but not yet in the downloaded source CSV. Rows are appended via the "Extra Games & Adjustments" tab and persist across app restarts.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `HomeTeam` | character | Home team name (must match names in source CSV) |
+| `HomeGoals` | integer | Home goals scored |
+| `AwayTeam` | character | Away team name |
+| `AwayGoals` | integer | Away goals scored |
+
+**Notes:**
+- Each row is passed to `add.game()` in the `all_matches` reactive, appending a synthetic row to `match_data()`.
+- Adding a game removes it from the remaining fixtures list and updates the league table immediately; re-run simulation to see updated odds.
+
+---
+
+## `data/point_deductions.csv` — Manual point deductions (Shiny app)
+
+Created at Shiny app startup if it doesn't exist. Stores point deductions applied after `create.league.table()`.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `Team` | character | Team name receiving the deduction |
+| `Points` | integer | Points to subtract from the team's total |
+| `Reason` | character | Free-text reason (e.g. "FFP breach") |
+
+**Notes:**
+- Applied in the `league_tables` reactive: `lt$Points[idx] <- lt$Points[idx] - pd$Points[i]` for each row.
+- Takes effect on the league table immediately; re-run simulation to see updated odds.
+
+---
+
 ## In-memory objects used in `analyze.R`
 
 These are not persisted to disk but are created from the above files during an interactive session.

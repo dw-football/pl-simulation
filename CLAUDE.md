@@ -62,6 +62,54 @@ A secondary Elo-based approach: converts Elo ratings to win probabilities, then 
 - `plot.points.vs.rank()` — points distribution chart colored by finishing rank
 - `plot.relegation.odds()` — relegation probability chart for a specific team
 
+## Shiny App
+
+An interactive Shiny app lives at `app.R` in the project root. It wraps the full simulation pipeline in a multi-league, multi-season UI.
+
+**Run it:**
+```r
+shiny::runApp("app.R")
+```
+
+**Key files added for the app:**
+
+| File | Purpose |
+|---|---|
+| `app.R` | Full Shiny app (UI + server, ~950 lines) |
+| `code/league_configs.R` | League metadata, URL helpers, table/flextable builders |
+| `data/extra_games.csv` | Persistent store for manually added results (survives restarts) |
+| `data/point_deductions.csv` | Persistent store for manual point deductions |
+
+**Functions in `code/league_configs.R`:**
+
+| Function | Purpose |
+|---|---|
+| `LEAGUE_CONFIGS` | Named list — 8 leagues, each with `code`, `file`, `num_teams`, `zones` |
+| `current_season()` | Returns 4-char season code based on today's date (e.g. `"2526"`) |
+| `make_download_url(season, code)` | Builds football-data.co.uk download URL |
+| `make.configurable.538.table(all_sims, sorted_lt, zones)` | Generalised 538-style odds table for any league's zone config |
+| `make.538.flextable(t, zones)` | Styled flextable from the above; last zone = danger (red), others green |
+| `ft_to_html(ft)` | Converts flextable to `htmltools::HTML()` for `renderUI` |
+
+**The 6 tabs:**
+1. **League Table** — styled 538-style odds table with PNG download
+2. **Relegation Race** — per-team points distribution plots (bottom N pre-selected)
+3. **Title / Top Spots** — rank-coloured points plots (top N pre-selected) + zone odds table
+4. **Team Focus** — single-team view: rank plot, relegation chart (if >0.5% risk), table row
+5. **Match Impact** — pick a fixture; see how each outcome (HW/D/AW) shifts every zone's odds
+6. **Extra Games & Adjustments** — add/delete manual results and point deductions; persists to CSV
+
+**Design notes for the app:**
+- `app.R` sources `code/library_calls.R`, `code/soccer_sim_functions.R`, `code/league_configs.R` at startup
+- `extra_games` and `point_deductions` are `reactiveVal`s seeded from their CSVs on startup; changes write back immediately
+- `sim_results` is cleared automatically whenever `all_matches()` changes (user must re-run)
+- Match Impact calls `calc.points.and.rank()` exactly 3 times (once per outcome), not once per zone
+- Do not modify: `code/soccer_sim_functions.R`, `code/library_calls.R`, `code/main.R`, `code/get_pl_data.R`, `code/simulate.R`
+
+**Build history:** `docs/shiny_todo.md` (checklist) · `docs/shiny_prompts.md` (detailed spec for each step)
+
+---
+
 ## Key Conventions
 
 - Function names use dot-separated lowercase: `create.league.table()`, `simulate.many.seasons()`
