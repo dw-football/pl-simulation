@@ -468,7 +468,7 @@ server <- function(input, output, session) {
               dplyr::filter(Percent >= 0.1) %>%
               dplyr::arrange(dplyr::desc(Percent)) %>%
               dplyr::select(Team, Points, Percent) %>%
-              dplyr::mutate(Percent = round(Percent, 1))
+              dplyr::mutate(Points = as.integer(Points), Percent = round(Percent, 1))
     names(odds) <- c("Team", "Points", "Relegation %")
     odds
   }, striped = TRUE, hover = TRUE, spacing = "xs", digits = 1)
