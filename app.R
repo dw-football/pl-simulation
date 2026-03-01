@@ -817,6 +817,10 @@ server <- function(input, output, session) {
       setProgress(1.0, detail = "Building table...")
     })
 
+    # Dynamic column names using actual team names
+    home_col <- paste0(home, " Win")
+    away_col <- paste0(away, " Win")
+
     # For each zone × team, get odds under each outcome
     get_pct <- function(sims, placement, operator, team) {
       odds <- create.finishing.odds.table(sims, placement, operator)
@@ -832,18 +836,32 @@ server <- function(input, output, session) {
         dr <- get_pct(dr_sims, z$placement, z$operator, team)
         aw <- get_pct(aw_sims, z$placement, z$operator, team)
         if (max(hw, dr, aw) < 0.5) return(NULL)
-        data.frame(Zone = zone_name, Team = team,
-                   "Home Win %" = hw, "Draw %" = dr, "Away Win %" = aw,
-                   check.names = FALSE)
+        df <- data.frame(Zone = zone_name, Team = team, hw, dr, aw)
+        names(df) <- c("Zone", "Team", home_col, "Draw", away_col)
+        df
       }))
     }))
 
     DT::datatable(rows,
       rownames = FALSE,
-      options  = list(pageLength = 30, dom = 't'),
-      caption  = paste(home, "vs", away, "— odds shift by result")
+      options  = list(
+        pageLength = 30,
+        dom = 't',
+        drawCallback = JS("function(settings) {
+          var api = this.api();
+          var nodes = api.rows({page: 'current'}).nodes();
+          var last_zone = '';
+          api.column(0, {page: 'current'}).data().each(function(zone, i) {
+            if (zone !== last_zone && last_zone !== '') {
+              $(nodes).eq(i).css('border-top', '2px solid #555');
+            }
+            last_zone = zone;
+          });
+        }")
+      ),
+      caption = paste(home, "vs", away, "— odds shift by result")
     ) %>%
-      DT::formatRound(c("Home Win %", "Draw %", "Away Win %"), digits = 1)
+      DT::formatRound(c(home_col, "Draw", away_col), digits = 1)
 
   }, server = FALSE)
 
