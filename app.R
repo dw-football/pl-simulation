@@ -853,7 +853,7 @@ server <- function(input, output, session) {
           var last_zone = '';
           api.column(0, {page: 'current'}).data().each(function(zone, i) {
             if (zone !== last_zone && last_zone !== '') {
-              $(nodes).eq(i).css('border-top', '2px solid #555');
+              $(nodes).eq(i).find('td').css('border-top', '2px solid #555');
             }
             last_zone = zone;
           });
