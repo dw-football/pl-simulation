@@ -84,7 +84,10 @@ ui <- page_sidebar(
         column(9,
           downloadButton("download_rel_png", "Save as PNG"),
           br(), br(),
-          plotOutput("rel_plot", height = "600px")
+          plotOutput("rel_plot", height = "600px"),
+          hr(),
+          h5("Relegation odds — all teams at risk:"),
+          tableOutput("rel_odds_table")
         )
       )
     ),
@@ -131,8 +134,9 @@ ui <- page_sidebar(
         column(4,
           uiOutput("impact_team_filter"),
           uiOutput("impact_fixture_selector"),
+          uiOutput("impact_watch_ui"),
           br(),
-          p(em("Shows how each possible result shifts finishing odds for both teams across every zone.")),
+          p(em("Shows how each possible result shifts finishing odds for the two teams, plus any watched teams, across every zone.")),
           p(em("Note: may take 15-30 seconds to compute."))
         ),
         column(8,
@@ -144,8 +148,7 @@ ui <- page_sidebar(
 
     nav_panel("Extra Games & Adjustments",
       fluidRow(
-        # ── Left: Extra Games ──────────────────────────────────────────────
-        column(6,
+        column(12,
           h4("Manual Entry Games"),
           p("Add games played but not yet in the downloaded CSV.",
             "Changes update the league table immediately;",
@@ -160,9 +163,11 @@ ui <- page_sidebar(
             column(6, uiOutput("eg_away_goals_ui"))
           ),
           actionButton("add_game_btn", "Add Result", class = "btn-primary")
-        ),
-        # ── Right: Point Deductions ────────────────────────────────────────
-        column(6,
+        )
+      ),
+      hr(),
+      fluidRow(
+        column(12,
           h4("Point Deductions"),
           p("Apply point deductions. Changes update the league table immediately."),
           DT::DTOutput("point_ded_dt"),
@@ -449,6 +454,24 @@ server <- function(input, output, session) {
       ggplot2::ggsave(file, gr, width = 10, height = 8, units = "in", dpi = 150)
     }
   )
+
+  output$rel_odds_table <- renderTable({
+    req(sim_results(), league_tables())
+    sr          <- sim_results()
+    cfg         <- LEAGUE_CONFIGS[[input$league]]
+    danger_zone <- cfg$zones[[length(cfg$zones)]]
+    odds <- create.finishing.odds.table(sr$all_sims,
+                                        danger_zone$placement,
+                                        danger_zone$operator)
+    slt  <- league_tables()$sorted
+    odds <- dplyr::left_join(odds, dplyr::select(slt, Team, Points), by = "Team") %>%
+              dplyr::filter(Percent >= 0.1) %>%
+              dplyr::arrange(dplyr::desc(Percent)) %>%
+              dplyr::select(Team, Points, Percent) %>%
+              dplyr::mutate(Percent = round(Percent, 1))
+    names(odds) <- c("Team", "Points", "Relegation %")
+    odds
+  }, striped = TRUE, hover = TRUE, spacing = "xs", digits = 1)
 
   # ── Tab 3: Title / Top Spots ──────────────────────────────────────────────
 
@@ -741,6 +764,22 @@ server <- function(input, output, session) {
                 choices = setNames(vals, labels))
   })
 
+  output$impact_watch_ui <- renderUI({
+    req(league_tables())
+    teams <- league_tables()$sorted$Team
+    selectizeInput("impact_watch", "Also watch:",
+                   choices  = teams,
+                   selected = NULL,
+                   multiple = TRUE,
+                   options  = list(placeholder = "Add a team..."))
+  })
+
+  # Clear watching teams when league changes
+  observe({
+    input$league
+    updateSelectizeInput(session, "impact_watch", selected = character(0))
+  })
+
   output$impact_title <- renderText({
     req(input$impact_fixture)
     parts <- strsplit(input$impact_fixture, "\\|\\|")[[1]]
@@ -782,7 +821,7 @@ server <- function(input, output, session) {
 
     rows <- dplyr::bind_rows(lapply(names(cfg$zones), function(zone_name) {
       z <- cfg$zones[[zone_name]]
-      dplyr::bind_rows(lapply(c(home, away), function(team) {
+      dplyr::bind_rows(lapply(c(home, away, input$impact_watch), function(team) {
         hw <- get_pct(hw_sims, z$placement, z$operator, team)
         dr <- get_pct(dr_sims, z$placement, z$operator, team)
         aw <- get_pct(aw_sims, z$placement, z$operator, team)
