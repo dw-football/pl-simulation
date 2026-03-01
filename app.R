@@ -117,9 +117,8 @@ ui <- page_sidebar(
           uiOutput("team_focus_rel_table_ui")   # points-to-rel table if >5% risk
         ),
         column(9,
-          downloadButton("download_focus_png", "Save as PNG"),
-          br(), br(),
           uiOutput("team_focus_plots_ui"),       # conditional 1 or 2 plots
+          downloadButton("download_focus_png", "Save as PNG"),
           hr(),
           h5("This team in the league table:"),
           div(style = "overflow-x: auto;", uiOutput("team_focus_table_row"))
