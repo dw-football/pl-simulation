@@ -271,13 +271,16 @@ server <- function(input, output, session) {
 
   all_matches <- reactive({
     req(match_data())
-    df <- match_data()
-    eg <- extra_games()
+    df        <- match_data()
+    eg        <- extra_games()
+    all_teams <- unique(c(df$HomeTeam, df$AwayTeam))
     if (nrow(eg) > 0) {
       for (i in seq_len(nrow(eg))) {
-        df <- add.game(df,
-                       eg$HomeTeam[i], eg$HomeGoals[i],
-                       eg$AwayTeam[i], eg$AwayGoals[i])
+        if (eg$HomeTeam[i] %in% all_teams && eg$AwayTeam[i] %in% all_teams) {
+          df <- add.game(df,
+                         eg$HomeTeam[i], eg$HomeGoals[i],
+                         eg$AwayTeam[i], eg$AwayGoals[i])
+        }
       }
     }
     df
@@ -288,11 +291,14 @@ server <- function(input, output, session) {
   league_tables <- reactive({
     req(all_matches())
     lt <- create.league.table(all_matches())
-    pd <- point_deductions()
+    pd        <- point_deductions()
+    all_teams <- lt$Team
     if (nrow(pd) > 0) {
       for (i in seq_len(nrow(pd))) {
-        idx <- lt$Team == pd$Team[i]
-        if (any(idx)) lt$Points[idx] <- lt$Points[idx] - pd$Points[i]
+        if (pd$Team[i] %in% all_teams) {
+          idx <- lt$Team == pd$Team[i]
+          lt$Points[idx] <- lt$Points[idx] - pd$Points[i]
+        }
       }
     }
     slt <- create.sorted.league.table(lt)
