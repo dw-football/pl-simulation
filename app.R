@@ -52,6 +52,8 @@ ui <- page_sidebar(
     sliderInput("num_sims", "Simulations:",
                 min = 500, max = 20000, value = 10000, step = 500),
 
+    checkboxInput("neutralize", "Neutralize (equal xG)", value = FALSE),
+
     actionButton("run_sim", "Run Simulation",
                  class = "btn-success w-100"),
 
@@ -338,7 +340,7 @@ server <- function(input, output, session) {
 
     withProgress(message = "Running simulation...", value = 0, {
       setProgress(0.1, detail = "Simulating seasons...")
-      all_scores <- simulate.many.seasons(rm, num_sims, neutralize = FALSE)
+      all_scores <- simulate.many.seasons(rm, num_sims, neutralize = input$neutralize)
       setProgress(0.7, detail = "Calculating standings...")
       all_sims   <- calc.points.and.rank(all_scores, lt, num_sims)
       setProgress(1.0, detail = "Done.")
