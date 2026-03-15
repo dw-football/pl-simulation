@@ -104,6 +104,12 @@ shiny::runApp("app.R")
 - `extra_games` and `point_deductions` are `reactiveVal`s seeded from their CSVs on startup; changes write back immediately
 - `sim_results` is cleared automatically whenever `all_matches()` changes (user must re-run)
 - Match Impact calls `calc.points.and.rank()` exactly 3 times (once per outcome), not once per zone
+- A **Neutralize** checkbox in the sidebar passes `neutralize = TRUE` to `simulate.many.seasons()`, forcing all xG to 1.0 (model sanity check)
+- `shinyjs` is required (`library(shinyjs)` + `useShinyjs()` in UI) for button enable/disable logic
+- **Run Simulation** button is disabled when results are current; re-enabled when `all_matches()` changes or `num_sims`/`neutralize` change (`needs_resim` reactiveVal tracks this)
+- **Run Impact Analysis** button on Match Impact tab is disabled until `sim_results()` is non-null; impact table only computes on button click (`bindEvent`)
+- Match Impact "Also watch" teams are deduplicated against the fixture's home/away teams (`setdiff`) to prevent double rows
+- `run_app.bat` sets `RSTUDIO_PANDOC` (needed by `ft_to_html`/flextable) and prepends user lib path `C:/Users/dwarren/AppData/Local/R/win-library/4.5` (where `shinyjs` is installed)
 - Do not modify: `code/soccer_sim_functions.R`, `code/library_calls.R`, `code/main.R`, `code/get_pl_data.R`, `code/simulate.R`
 
 **Build history:** `docs/shiny_todo.md` (checklist) · `docs/shiny_prompts.md` (detailed spec for each step)

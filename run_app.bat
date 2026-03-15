@@ -2,6 +2,7 @@
 set RSTUDIO_PANDOC=C:\Program Files\RStudio\resources\app\bin\quarto\bin\tools
 taskkill /f /im Rscript.exe /t 2>nul
 timeout /t 2 /nobreak
-start "" "C:\Program Files\R\R-4.5.0\bin\Rscript.exe" -e "setwd('G:/Soccer/pl-simulation'); shiny::runApp('app.R', port=3838, launch.browser=FALSE)"
+start "" Rscript.exe -e ".libPaths(c('C:/Users/dwarren/AppData/Local/R/win-library/4.5', .libPaths())); setwd('G:/Soccer/pl-simulation'); shiny::runApp('app.R', port=3838, launch.browser=FALSE)"
 timeout /t 5 /nobreak
 start chrome http://127.0.0.1:3838
+s

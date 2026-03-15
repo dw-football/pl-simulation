@@ -1,6 +1,7 @@
 library(shiny)
 library(bslib)
 library(DT)
+library(shinyjs)
 
 source("code/library_calls.R")
 source("code/soccer_sim_functions.R")
@@ -24,7 +25,9 @@ if (!file.exists("data/point_deductions.csv")) {
 
 # ── UI ────────────────────────────────────────────────────────────────────────
 
-ui <- page_sidebar(
+ui <- tagList(
+  useShinyjs(),
+  page_sidebar(
   title = "Football League Simulator",
   theme = bs_theme(bootswatch = "flatly"),
 
@@ -138,6 +141,9 @@ ui <- page_sidebar(
           uiOutput("impact_fixture_selector"),
           uiOutput("impact_watch_ui"),
           br(),
+          actionButton("run_impact", "Run Impact Analysis",
+                       class = "btn-warning w-100"),
+          br(),
           p(em("Shows how each possible result shifts finishing odds for the two teams, plus any watched teams, across every zone.")),
           p(em("Note: may take 15-30 seconds to compute."))
         ),
@@ -196,7 +202,7 @@ ui <- page_sidebar(
       "))
     )
   )
-)
+))
 
 # ── Server ────────────────────────────────────────────────────────────────────
 
@@ -325,11 +331,25 @@ server <- function(input, output, session) {
   # ── Simulation ────────────────────────────────────────────────────────────
 
   sim_results <- reactiveVal(NULL)
+  needs_resim <- reactiveVal(TRUE)
 
   # Clear sim_results whenever underlying match data changes (forces re-run)
   observe({
     all_matches()
     sim_results(NULL)
+    needs_resim(TRUE)
+  })
+
+  # Also mark stale when num_sims or neutralize change (don't clear sim_results
+  # — old results are still valid — but indicate a re-run would be meaningful)
+  observeEvent(list(input$num_sims, input$neutralize), {
+    needs_resim(TRUE)
+  }, ignoreInit = TRUE)
+
+  # Enable/disable Run Simulation based on staleness
+  observe({
+    shinyjs::toggleState("run_sim",
+      condition = needs_resim() || is.null(sim_results()))
   })
 
   observeEvent(input$run_sim, {
@@ -351,6 +371,7 @@ server <- function(input, output, session) {
       all_sims   = all_sims,
       num_sims   = num_sims
     ))
+    needs_resim(FALSE)
   })
 
   output$sim_status <- renderText({
@@ -740,6 +761,11 @@ server <- function(input, output, session) {
 
   # ── Tab 5: Match Impact ───────────────────────────────────────────────────
 
+  # Enable Run Impact only when a simulation has been run
+  observe({
+    shinyjs::toggleState("run_impact", condition = !is.null(sim_results()))
+  })
+
   output$impact_team_filter <- renderUI({
     req(rem_matches_r())
     teams <- sort(unique(c(rem_matches_r()$HomeTeam, rem_matches_r()$AwayTeam)))
@@ -792,7 +818,7 @@ server <- function(input, output, session) {
     req(input$impact_fixture)
     parts <- strsplit(input$impact_fixture, "\\|\\|")[[1]]
     paste("Match Impact:", parts[1], "vs", parts[2])
-  })
+  }) |> bindEvent(input$run_impact)
 
   output$impact_table <- DT::renderDT({
     req(sim_results(), input$impact_fixture, league_tables())
@@ -833,7 +859,7 @@ server <- function(input, output, session) {
 
     rows <- dplyr::bind_rows(lapply(names(cfg$zones), function(zone_name) {
       z <- cfg$zones[[zone_name]]
-      dplyr::bind_rows(lapply(c(home, away, input$impact_watch), function(team) {
+      dplyr::bind_rows(lapply(c(home, away, setdiff(input$impact_watch, c(home, away))), function(team) {
         hw <- get_pct(hw_sims, z$placement, z$operator, team)
         dr <- get_pct(dr_sims, z$placement, z$operator, team)
         aw <- get_pct(aw_sims, z$placement, z$operator, team)
@@ -865,7 +891,7 @@ server <- function(input, output, session) {
     ) %>%
       DT::formatRound(c(home_col, "Draw", away_col), digits = 1)
 
-  }, server = FALSE)
+  }, server = FALSE) |> bindEvent(input$run_impact)
 
   # ── Tab 6: Extra Games & Adjustments ─────────────────────────────────────
 
