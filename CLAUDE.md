@@ -64,55 +64,15 @@ A secondary Elo-based approach: converts Elo ratings to win probabilities, then 
 
 ## Shiny App
 
-An interactive Shiny app lives at `app.R` in the project root. It wraps the full simulation pipeline in a multi-league, multi-season UI.
+An interactive Shiny app at `app.R` wraps the full simulation pipeline in a multi-league, multi-season UI with 6 tabs: League Table, Relegation Race, Title/Top Spots, Team Focus, Match Impact, Extra Games & Adjustments.
 
-**Run it:**
-```r
-shiny::runApp("app.R")
-```
+**Run it:** `shiny::runApp("app.R")` (or use `run_app.bat` on Windows — sets RSTUDIO_PANDOC and lib path)
 
-**Key files added for the app:**
+**Key files:** `app.R`, `code/league_configs.R`, `data/extra_games.csv`, `data/point_deductions.csv`
 
-| File | Purpose |
-|---|---|
-| `app.R` | Full Shiny app (UI + server, ~950 lines) |
-| `code/league_configs.R` | League metadata, URL helpers, table/flextable builders |
-| `data/extra_games.csv` | Persistent store for manually added results (survives restarts) |
-| `data/point_deductions.csv` | Persistent store for manual point deductions |
+Do not modify: `code/soccer_sim_functions.R`, `code/library_calls.R`, `code/main.R`, `code/get_pl_data.R`, `code/simulate.R`
 
-**Functions in `code/league_configs.R`:**
-
-| Function | Purpose |
-|---|---|
-| `LEAGUE_CONFIGS` | Named list — 8 leagues, each with `code`, `file`, `num_teams`, `zones` |
-| `current_season()` | Returns 4-char season code based on today's date (e.g. `"2526"`) |
-| `make_download_url(season, code)` | Builds football-data.co.uk download URL |
-| `make.configurable.538.table(all_sims, sorted_lt, zones)` | Generalised 538-style odds table for any league's zone config |
-| `make.538.flextable(t, zones)` | Styled flextable from the above; last zone = danger (red), others green |
-| `ft_to_html(ft)` | Converts flextable to `htmltools::HTML()` for `renderUI` |
-
-**The 6 tabs:**
-1. **League Table** — styled 538-style odds table with PNG download
-2. **Relegation Race** — per-team points distribution plots (bottom N pre-selected)
-3. **Title / Top Spots** — rank-coloured points plots (top N pre-selected) + zone odds table
-4. **Team Focus** — single-team view: rank plot, relegation chart (if >0.5% risk), table row
-5. **Match Impact** — pick a fixture; see how each outcome (HW/D/AW) shifts every zone's odds
-6. **Extra Games & Adjustments** — add/delete manual results and point deductions; persists to CSV
-
-**Design notes for the app:**
-- `app.R` sources `code/library_calls.R`, `code/soccer_sim_functions.R`, `code/league_configs.R` at startup
-- `extra_games` and `point_deductions` are `reactiveVal`s seeded from their CSVs on startup; changes write back immediately
-- `sim_results` is cleared automatically whenever `all_matches()` changes (user must re-run)
-- Match Impact calls `calc.points.and.rank()` exactly 3 times (once per outcome), not once per zone
-- A **Neutralize** checkbox in the sidebar passes `neutralize = TRUE` to `simulate.many.seasons()`, forcing all xG to 1.0 (model sanity check)
-- `shinyjs` is required (`library(shinyjs)` + `useShinyjs()` in UI) for button enable/disable logic
-- **Run Simulation** button is disabled when results are current; re-enabled when `all_matches()` changes or `num_sims`/`neutralize` change (`needs_resim` reactiveVal tracks this)
-- **Run Impact Analysis** button on Match Impact tab is disabled until `sim_results()` is non-null; impact table only computes on button click (`bindEvent`)
-- Match Impact "Also watch" teams are deduplicated against the fixture's home/away teams (`setdiff`) to prevent double rows
-- `run_app.bat` sets `RSTUDIO_PANDOC` (needed by `ft_to_html`/flextable) and prepends user lib path `C:/Users/dwarren/AppData/Local/R/win-library/4.5` (where `shinyjs` is installed)
-- Do not modify: `code/soccer_sim_functions.R`, `code/library_calls.R`, `code/main.R`, `code/get_pl_data.R`, `code/simulate.R`
-
-**Build history:** `docs/shiny_todo.md` (checklist) · `docs/shiny_prompts.md` (detailed spec for each step)
+Full design notes, reactive logic, tab specs, and `league_configs.R` function reference: see `docs/ARCHITECTURE.md`.
 
 ---
 

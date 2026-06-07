@@ -157,3 +157,49 @@ Final standings sort by `Pts DESC, GD DESC, GS DESC`. This matches Premier Leagu
 ## Alternative: Elo-based xG (`code/elo_calcs.R`)
 
 A secondary approach used only for `denmark.R`. Converts Elo ratings to win/draw/loss probabilities via a logistic function, then back-solves numerically to find `(ExpHG, ExpAG)` pairs via `find_xg_values()`. Not integrated into the main PL pipeline.
+
+---
+
+## Shiny App (`app.R`)
+
+### Overview
+
+Multi-league, multi-season UI wrapping the full simulation pipeline. 8 leagues supported via `LEAGUE_CONFIGS` in `code/league_configs.R`.
+
+### 6 Tabs
+
+1. **League Table** — styled 538-style odds table with PNG download
+2. **Relegation Race** — per-team points distribution plots (bottom N pre-selected)
+3. **Title / Top Spots** — rank-coloured points plots (top N pre-selected) + zone odds table
+4. **Team Focus** — single-team view: rank plot, relegation chart (if >0.5% risk), table row
+5. **Match Impact** — pick a fixture; see how each outcome (HW/D/AW) shifts every zone's odds
+6. **Extra Games & Adjustments** — add/delete manual results and point deductions; persists to CSV
+
+### `code/league_configs.R` Functions
+
+| Function | Purpose |
+|---|---|
+| `LEAGUE_CONFIGS` | Named list — 8 leagues, each with `code`, `file`, `num_teams`, `zones` |
+| `current_season()` | Returns 4-char season code based on today's date (e.g. `"2526"`) |
+| `make_download_url(season, code)` | Builds football-data.co.uk download URL |
+| `make.configurable.538.table(all_sims, sorted_lt, zones)` | Generalised 538-style odds table for any league's zone config |
+| `make.538.flextable(t, zones)` | Styled flextable; last zone = danger (red), others green |
+| `ft_to_html(ft)` | Converts flextable to `htmltools::HTML()` for `renderUI` |
+
+### Reactive Design Notes
+
+- `app.R` sources `code/library_calls.R`, `code/soccer_sim_functions.R`, `code/league_configs.R` at startup
+- `extra_games` and `point_deductions` are `reactiveVal`s seeded from their CSVs on startup; changes write back immediately
+- `sim_results` is cleared automatically whenever `all_matches()` changes (user must re-run)
+- Match Impact calls `calc.points.and.rank()` exactly 3 times (once per outcome), not once per zone
+- **Neutralize** checkbox passes `neutralize = TRUE` to `simulate.many.seasons()`, forcing all xG to 1.0 (model sanity check)
+- `shinyjs` required (`library(shinyjs)` + `useShinyjs()` in UI) for button enable/disable logic
+- **Run Simulation** button disabled when results are current; re-enabled when `all_matches()` changes or `num_sims`/`neutralize` change (`needs_resim` reactiveVal)
+- **Run Impact Analysis** button disabled until `sim_results()` is non-null; computes only on button click (`bindEvent`)
+- Match Impact "Also watch" teams are deduplicated against the fixture's home/away teams (`setdiff`) to prevent double rows
+- `run_app.bat` sets `RSTUDIO_PANDOC` (needed by `ft_to_html`/flextable) and prepends user lib path `C:/Users/dwarren/AppData/Local/R/win-library/4.5` (where `shinyjs` is installed)
+
+### Build History
+
+- `docs/shiny_todo.md` — step-by-step implementation checklist
+- `docs/shiny_prompts.md` — detailed spec for each build step

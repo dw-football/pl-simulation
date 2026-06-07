@@ -1,7 +1,18 @@
 {
   "permissions": {
     "allow": [
-      "Bash(cd G:\\\\My Drive\\\\Computing\\\\R\\\\pl-simulation:*)"
+      "Bash(cd G:\\\\My Drive\\\\Computing\\\\R\\\\pl-simulation:*)",
+      "Bash(rm:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(git:*)",
+      "Bash(where:*)",
+      "Bash(Rscript.exe -e \"library\\(shiny\\); cat\\('shiny ok\\\\n'\\)\" 2>&1)",
+      "Bash(Rscript.exe -e \"library\\(shinyjs\\); cat\\('shinyjs ok\\\\n'\\)\" 2>&1)",
+      "Bash(Rscript.exe -e \"pkgs <- c\\('shiny','shinyjs','flextable','data.table','dplyr','ggplot2','DT','htmltools','officer'\\); for\\(p in pkgs\\) cat\\(p, ':', requireNamespace\\(p, quietly=TRUE\\), '\\\\n'\\)\" 2>&1)",
+      "Bash(Rscript.exe -e \"install.packages\\('shinyjs', lib='C:/Users/dwarren/AppData/Local/R/win-library/4.5', repos='https://cran.rstudio.com/'\\)\" 2>&1)"
     ]
   }
 }
