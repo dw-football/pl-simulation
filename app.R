@@ -241,6 +241,17 @@ server <- function(input, output, session) {
 
   observeEvent(input$download_data, {
     cfg  <- LEAGUE_CONFIGS[[input$league]]
+
+    # Frozen leagues (e.g. the always-runnable Test Season) must never be
+    # overwritten by a live download — bail out with a notice instead.
+    if (isTRUE(cfg$frozen)) {
+      showNotification(
+        paste0("'", input$league, "' is a frozen snapshot — no download."),
+        type = "warning", duration = 5
+      )
+      return(invisible(NULL))
+    }
+
     url  <- make_download_url(input$season, cfg$code)
     file <- cfg$file
 

@@ -13,6 +13,26 @@
 
 LEAGUE_CONFIGS <- list(
 
+  # Frozen half-season snapshot (190 games played, 190 remaining) so the app is
+  # ALWAYS runnable — including the off-season, when real leagues have no games
+  # left to simulate. `frozen = TRUE` blocks the "Download Latest Data" button
+  # from overwriting the static file. Data: first 190 games of a past EPL season.
+  "Test Season (always runnable)" = list(
+    code      = "E0",
+    file      = "data/TEST.csv",
+    num_teams = 20,
+    frozen    = TRUE,
+    zones     = list(
+      Win  = list(placement = 1,  operator = "=="),
+      Top4 = list(placement = 5,  operator = "<"),
+      Top5 = list(placement = 6,  operator = "<"),
+      Top6 = list(placement = 7,  operator = "<"),
+      Top7 = list(placement = 8,  operator = "<"),
+      Top8 = list(placement = 9,  operator = "<"),
+      Rel  = list(placement = 17, operator = ">")
+    )
+  ),
+
   "Premier League" = list(
     code      = "E0",
     file      = "data/E0.csv",
