@@ -70,6 +70,8 @@ An interactive Shiny app at `app.R` wraps the full simulation pipeline in a mult
 
 **Key files:** `app.R`, `code/league_configs.R`, `data/extra_games.csv`, `data/point_deductions.csv`
 
+**Test Season:** the "Test Season (always runnable)" league (`data/TEST.csv`, a frozen 190-played/190-remaining EPL half-season, `frozen = TRUE` in `LEAGUE_CONFIGS`) always has games to simulate — use it to smoke-test the app in the off-season. The "Download Latest Data" button is blocked for `frozen` leagues so the fixture can't be overwritten.
+
 Do not modify: `code/soccer_sim_functions.R`, `code/library_calls.R`, `code/main.R`, `code/get_pl_data.R`, `code/simulate.R`
 
 Full design notes, reactive logic, tab specs, and `league_configs.R` function reference: see `docs/ARCHITECTURE.md`.
