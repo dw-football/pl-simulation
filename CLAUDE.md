@@ -74,6 +74,11 @@ An interactive Shiny app at `app.R` wraps the full simulation pipeline in a mult
 
 Do not modify: `code/soccer_sim_functions.R`, `code/library_calls.R`, `code/main.R`, `code/get_pl_data.R`, `code/simulate.R`
 
+## renv / Cross-Machine
+
+- `run_app.bat` self-heals: git pull → **explicit** renv activation → `renv::restore()`. A machine-level `R_PROFILE_USER` (→ `G:/Computing/R/.Rprofile`) hijacks the profile slot on all of David's machines and silently defeats renv auto-activation — any script doing renv ops must `setwd(project); source('renv/activate.R')` first.
+- **No Rtools on the work machines (520, laptop)** — every `renv.lock` pin must have a CRAN *Windows binary*. CRAN serves binaries only for current versions; once a pinned version is archived, restore falls back to source → compile → fails. If a fresh restore fails on a batch of "install failed" packages with compiled code, that's this. Fix: re-pin the stale packages to current binary versions and `renv::record()` them (done 2026-06-10 for 54 pins, commit `c66519e`).
+
 Full design notes, reactive logic, tab specs, and `league_configs.R` function reference: see `docs/ARCHITECTURE.md`.
 
 ---
