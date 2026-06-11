@@ -76,10 +76,18 @@ Do not modify: `code/soccer_sim_functions.R`, `code/library_calls.R`, `code/main
 
 ## renv / Cross-Machine
 
-- `run_app.bat` self-heals: git pull → **explicit** renv activation → `renv::restore()`. A machine-level `R_PROFILE_USER` (→ `G:/Computing/R/.Rprofile`) hijacks the profile slot on all of David's machines and silently defeats renv auto-activation — any script doing renv ops must `setwd(project); source('renv/activate.R')` first.
+- `run_app.bat` self-heals: git pull → **explicit** renv activation → `renv::restore()`. A User-scope `R_PROFILE_USER` (→ `G:/Computing/R/.Rprofile`) hijacked the profile slot and silently defeated renv auto-activation. **Fixed on 2W 2026-06-11** (var unset, defaults moved to a local `~/Documents/.Rprofile`); 520 + laptop queued in the vault's `Claude setup` RESUME list. Until all three are confirmed fixed, keep the explicit `setwd(project); source('renv/activate.R')` pattern in any script doing renv ops — it's a harmless no-op on fixed machines.
 - **No Rtools on the work machines (520, laptop)** — every `renv.lock` pin must have a CRAN *Windows binary*. CRAN serves binaries only for current versions; once a pinned version is archived, restore falls back to source → compile → fails. If a fresh restore fails on a batch of "install failed" packages with compiled code, that's this. Fix: re-pin the stale packages to current binary versions and `renv::record()` them (done 2026-06-10 for 54 pins, commit `c66519e`).
 
 Full design notes, reactive logic, tab specs, and `league_configs.R` function reference: see `docs/ARCHITECTURE.md`.
+
+## Related Locations (off-repo)
+
+Code lives here (`~/src/pl-simulation`, git); documents and archived data stay on Google Drive:
+
+- **Archived Maccabi prototype data** → `~/My Drive/Soccer/Maccabi/Data/` — the pre-R Excel Monte Carlo (`Maccabi simulation 2023.xlsx`) + 34 data files removed from this repo 2026-06-07.
+- **Old Drive copy** `G:\Soccer\pl-simulation` — DEPRECATED orphan, pending deletion (~2026-06-16, tombstone will point back here). Never edit or run from it.
+- **Migration history/plan** → vault note `Personal/tech/Code off Drive - git migration plan.md`.
 
 ---
 
